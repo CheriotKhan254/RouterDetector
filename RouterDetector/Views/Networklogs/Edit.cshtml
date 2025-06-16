@@ -1,0 +1,74 @@
+﻿@model RouterDetector.Models.Networklogs
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>Networklogs</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="SrcIp" class="control-label"></label>
+                <input asp-for="SrcIp" class="form-control" />
+                <span asp-validation-for="SrcIp" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DstIp" class="control-label"></label>
+                <input asp-for="DstIp" class="form-control" />
+                <span asp-validation-for="DstIp" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="SrcPort" class="control-label"></label>
+                <input asp-for="SrcPort" class="form-control" />
+                <span asp-validation-for="SrcPort" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="DstPort" class="control-label"></label>
+                <input asp-for="DstPort" class="form-control" />
+                <span asp-validation-for="DstPort" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Protocol" class="control-label"></label>
+                <input asp-for="Protocol" class="form-control" />
+                <span asp-validation-for="Protocol" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="RuleType" class="control-label"></label>
+                <input asp-for="RuleType" class="form-control" />
+                <span asp-validation-for="RuleType" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LivePcap" class="control-label"></label>
+                <input asp-for="LivePcap" class="form-control" />
+                <span asp-validation-for="LivePcap" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Message" class="control-label"></label>
+                <input asp-for="Message" class="form-control" />
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LogOccurrence" class="control-label"></label>
+                <input asp-for="LogOccurrence" class="form-control" />
+                <span asp-validation-for="LogOccurrence" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

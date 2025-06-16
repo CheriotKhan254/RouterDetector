@@ -1,0 +1,55 @@
+﻿@model IEnumerable<RouterDetector.Models.Networklogs>
+
+@{
+    ViewData["Title"] = "Network Logs";
+}
+
+<div class="container mt-4">
+    <h2 class="mb-4">📊 Network Logs</h2>
+
+    <div class="mb-3">
+        <a asp-action="Create" class="btn btn-primary">➕ Create New Log</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>@Html.DisplayNameFor(model => model.First().SrcIp)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().DstIp)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().SrcPort)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().DstPort)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Protocol)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().RuleType)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().LivePcap)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().Message)</th>
+                    <th>@Html.DisplayNameFor(model => model.First().LogOccurrence)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.SrcIp</td>
+                        <td>@item.DstIp</td>
+                        <td>@item.SrcPort</td>
+                        <td>@item.DstPort</td>
+                        <td>@item.Protocol</td>
+                        <td>@item.RuleType</td>
+                        <td>@(item.LivePcap == true ? "Yes" : "No")</td>
+                        <td>@item.Message</td>
+                        <td>@item.LogOccurrence?.ToString("g")</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
