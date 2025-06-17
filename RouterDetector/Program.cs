@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
+using RouterDetector.Models;
 using RouterDetector.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +14,8 @@ builder.Services.AddHostedService<NetworkTrafficCaptureService>();
 
 // ✅ Add MVC controller and view services
 builder.Services.AddControllersWithViews();
+builder.Services.AddSingleton<INetworkCaptureService, NetworkCaptureService>();
+builder.Services.AddHostedService<NetworkTrafficCaptureService>();
 
 var app = builder.Build();
 

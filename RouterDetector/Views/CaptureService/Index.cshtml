@@ -1,0 +1,148 @@
+﻿@* Views/CaptureService/Index.cshtml *@
+@{
+    ViewData["Title"] = "Network Capture Service";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-wifi me-2"></i>Network Capture Service</h3>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="fw-bold">Select Network Device:</label>
+                        <select id="deviceSelect" class="form-select">
+                            <option value="">Loading devices...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-end h-100">
+                        <button id="startBtn" class="btn btn-success me-2" disabled>
+                            <i class="fas fa-play me-1"></i>Start Capture
+                        </button>
+                        <button id="stopBtn" class="btn btn-danger" disabled>
+                            <i class="fas fa-stop me-1"></i>Stop Capture
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5><i class="fas fa-info-circle me-2"></i>Status Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>Status:</strong> <span id="statusText" class="badge bg-secondary">Unknown</span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Current Device:</strong> <span id="currentDeviceText">None</span>
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Router IP:</strong> <span id="routerIpText">Not detected</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Load available devices
+            $.get('/api/networkcapture/devices', function (devices) {
+                $('#deviceSelect').empty();
+                if (devices.length > 0) {
+                    devices.forEach(function (device) {
+                        $('#deviceSelect').append($('<option>', {
+                            value: device.name,
+                            text: device.description
+                        }));
+                    });
+                    updateStatus();
+                } else {
+                    $('#deviceSelect').append($('<option>', {
+                        value: '',
+                        text: 'No devices found'
+                    }));
+                }
+            });
+
+            // Update status periodically
+            setInterval(updateStatus, 2000);
+
+            // Fixed Start button handler with proper JSON
+            $('#startBtn').click(function () {
+                const deviceName = $('#deviceSelect').val();
+
+                // Create proper JSON request
+                $.ajax({
+                    url: '/api/networkcapture/start',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(deviceName),
+                    success: function () {
+                        updateStatus();
+                        showAlert('Capture started successfully', 'success');
+                    },
+                    error: function (xhr) {
+                        showAlert('Error: ' + xhr.responseText, 'danger');
+                    }
+                });
+            });
+
+            $('#stopBtn').click(function () {
+                $.post('/api/networkcapture/stop')
+                    .done(function () {
+                        updateStatus();
+                        showAlert('Capture stopped successfully', 'success');
+                    })
+                    .fail(function (xhr) {
+                        showAlert('Error: ' + xhr.responseText, 'danger');
+                    });
+            });
+
+            function updateStatus() {
+                $.get('/api/networkcapture/status', function (status) {
+                    $('#statusText').text(status.isRunning ? 'Running' : 'Stopped')
+                        .removeClass('bg-secondary bg-success bg-danger')
+                        .addClass(status.isRunning ? 'bg-success' : 'bg-danger');
+
+                    $('#currentDeviceText').text(status.currentDevice || 'None');
+                    $('#routerIpText').text(status.routerIp || 'Not detected');
+
+                    $('#startBtn').prop('disabled', status.isRunning);
+                    $('#stopBtn').prop('disabled', !status.isRunning);
+                    $('#deviceSelect').prop('disabled', status.isRunning);
+                });
+            }
+
+            // Helper function for showing alerts
+            function showAlert(message, type) {
+                const alertHtml = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                            ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`;
+
+                // Add alert to the top of the card body
+                $('.card-body').prepend(alertHtml);
+
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    $('.alert').alert('close');
+                }, 5000);
+            }
+        });
+    </script>
+
+}

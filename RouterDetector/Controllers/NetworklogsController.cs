@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
 using RouterDetector.Models;
@@ -18,12 +14,72 @@ namespace RouterDetector.Controllers
             _context = context;
         }
 
+
         // GET: Networklogs
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(
+            string? filterIpAddress,
+            string? filterProtocol,
+            DateTime? filterStartDate,
+            DateTime? filterEndDate,
+            int pageNumber = 1,
+            int pageSize = 50)
         {
-            return View(await _context.Networklogs
+            var query = _context.Networklogs.AsQueryable();
+
+            // Apply filters
+            if (!string.IsNullOrEmpty(filterIpAddress))
+            {
+                query = query.Where(l => l.SrcIp.Contains(filterIpAddress) || l.DstIp.Contains(filterIpAddress));
+            }
+
+            if (!string.IsNullOrEmpty(filterProtocol))
+            {
+                query = query.Where(l => l.Protocol == filterProtocol);
+            }
+
+            if (filterStartDate.HasValue)
+            {
+                query = query.Where(l => l.LogOccurrence >= filterStartDate);
+            }
+
+            if (filterEndDate.HasValue)
+            {
+                query = query.Where(l => l.LogOccurrence <= filterEndDate);
+            }
+
+            // Get total count before pagination
+            var totalRecords = await query.CountAsync();
+
+            // Apply pagination
+            var logs = await query
                 .OrderByDescending(n => n.LogOccurrence ?? DateTime.MinValue)
-                .ToListAsync());
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var model = new NetworkLogsViewModel
+            {
+                Logs = logs,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                FilterIpAddress = filterIpAddress,
+                FilterProtocol = filterProtocol,
+                FilterStartDate = filterStartDate,
+                FilterEndDate = filterEndDate
+            };
+
+            return View(model);
+        }
+
+        // In your NetworklogsController.cs
+        [HttpGet]
+        public async Task<IActionResult> CheckNewLogs(DateTime lastLogTime)
+        {
+            var hasNewLogs = await _context.Networklogs
+                .AnyAsync(l => l.LogOccurrence > lastLogTime);
+
+            return Json(new { hasNewLogs });
         }
 
         // GET: Networklogs/Details/5
