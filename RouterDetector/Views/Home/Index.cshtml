@@ -1,8 +1,10 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center mt-5">
+        <h1 class="display-4 mb-3">Welcome to RouterDetector</h1>
+        <p class="lead mb-4">Monitor, analyze, and review your network and detection logs with real-time analytics and beautiful dashboards.</p>
+        <a href="@Url.Action("Dashboard", "Home")" class="btn btn-primary btn-lg shadow">Go to Dashboard</a>
+    </div>
 </div>

@@ -2,9 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
 using RouterDetector.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RouterDetector.Controllers
 {
+    [Authorize]
     public class NetworklogsController : Controller
     {
         private readonly RouterDetectorContext _context;

@@ -1,0 +1,240 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var topSourceIps = ViewBag.TopSourceIps as IEnumerable<dynamic>;
+    var topProtocols = ViewBag.TopProtocols as IEnumerable<dynamic>;
+    var topDeviceTypes = ViewBag.TopDeviceTypes as IEnumerable<dynamic>;
+    var topEventTypes = ViewBag.TopEventTypes as IEnumerable<dynamic>;
+    var topDestIps = ViewBag.TopDestIps as IEnumerable<dynamic>;
+    var recentNetworkLogs = ViewBag.RecentNetworkLogs as IEnumerable<RouterDetector.Models.Networklogs>;
+    var recentDetectionLogs = ViewBag.RecentDetectionLogs as IEnumerable<RouterDetector.Models.Detectionlogs>;
+}
+<h1 class="mb-4">Dashboard & Analytics</h1>
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-primary shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-network-wired fa-2x mb-2"></i>
+                <h5 class="card-title mt-2">Total Network Logs</h5>
+                <p class="display-6 fw-bold mb-0">@ViewBag.TotalNetworkLogs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-success shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-bug fa-2x mb-2"></i>
+                <h5 class="card-title mt-2">Total Detection Logs</h5>
+                <p class="display-6 fw-bold mb-0">@ViewBag.TotalDetectionLogs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-info shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-clock fa-2x mb-2"></i>
+                <h5 class="card-title mt-2">Logs in Last 24h</h5>
+                <p class="display-6 fw-bold mb-0" id="logsLast24h">...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Network Logs by Protocol</h5>
+                <canvas id="protocolChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Detection Logs by Device Type</h5>
+                <canvas id="deviceTypeChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Detection Logs by Event Type</h5>
+                <canvas id="eventTypeChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Network Logs by Destination IP</h5>
+                <canvas id="destIpChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Top Source IPs</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>IP</th><th>Count</th></tr></thead>
+                    <tbody>
+                    @if (topSourceIps != null)
+                    {
+                        foreach (var ip in topSourceIps)
+                        {
+                            <tr><td>@ip.Ip</td><td>@ip.Count</td></tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Top Protocols</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Protocol</th><th>Count</th></tr></thead>
+                    <tbody>
+                    @if (topProtocols != null)
+                    {
+                        foreach (var proto in topProtocols)
+                        {
+                            <tr><td>@proto.Protocol</td><td>@proto.Count</td></tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Recent Network Logs</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Time</th><th>Src IP</th><th>Dst IP</th><th>Protocol</th><th>Message</th></tr></thead>
+                    <tbody>
+                    @if (recentNetworkLogs != null)
+                    {
+                        foreach (var log in recentNetworkLogs)
+                        {
+                            <tr>
+                                <td>@log.LogOccurrence?.ToString("g")</td>
+                                <td>@log.SrcIp</td>
+                                <td>@log.DstIp</td>
+                                <td>@log.Protocol</td>
+                                <td>@log.Message</td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Recent Detection Logs</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Time</th><th>Source IP</th><th>Device Type</th><th>Event Type</th><th>Severity</th></tr></thead>
+                    <tbody>
+                    @if (recentDetectionLogs != null)
+                    {
+                        foreach (var log in recentDetectionLogs)
+                        {
+                            <tr>
+                                <td>@log.Timestamp.ToString("g")</td>
+                                <td>@log.SourceIP</td>
+                                <td>@log.DeviceType</td>
+                                <td>@log.EventType</td>
+                                <td>@log.Severty</td>
+                            </tr>
+                        }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Protocol Chart
+        const protocolLabels = [@string.Join(",", (topProtocols ?? new List<dynamic>()).Select(p => "'" + (p.Protocol ?? "Unknown") + "'"))];
+        const protocolData = [@string.Join(",", (topProtocols ?? new List<dynamic>()).Select(p => p.Count))];
+        new Chart(document.getElementById('protocolChart'), {
+            type: 'bar',
+            data: {
+                labels: protocolLabels,
+                datasets: [{
+                    label: 'Count',
+                    data: protocolData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Device Type Chart
+        const deviceTypeLabels = [@string.Join(",", (topDeviceTypes ?? new List<dynamic>()).Select(d => "'" + (d.DeviceType ?? "Unknown") + "'"))];
+        const deviceTypeData = [@string.Join(",", (topDeviceTypes ?? new List<dynamic>()).Select(d => d.Count))];
+        new Chart(document.getElementById('deviceTypeChart'), {
+            type: 'pie',
+            data: {
+                labels: deviceTypeLabels,
+                datasets: [{
+                    data: deviceTypeData,
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d']
+                }]
+            },
+            options: { responsive: true }
+        });
+        // Event Type Chart
+        const eventTypeLabels = [@string.Join(",", (topEventTypes ?? new List<dynamic>()).Select(e => "'" + (e.EventType ?? "Unknown") + "'"))];
+        const eventTypeData = [@string.Join(",", (topEventTypes ?? new List<dynamic>()).Select(e => e.Count))];
+        new Chart(document.getElementById('eventTypeChart'), {
+            type: 'bar',
+            data: {
+                labels: eventTypeLabels,
+                datasets: [{
+                    label: 'Count',
+                    data: eventTypeData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Destination IP Chart
+        const destIpLabels = [@string.Join(",", (topDestIps ?? new List<dynamic>()).Select(d => "'" + (d.Ip ?? "Unknown") + "'"))];
+        const destIpData = [@string.Join(",", (topDestIps ?? new List<dynamic>()).Select(d => d.Count))];
+        new Chart(document.getElementById('destIpChart'), {
+            type: 'bar',
+            data: {
+                labels: destIpLabels,
+                datasets: [{
+                    label: 'Count',
+                    data: destIpData,
+                    backgroundColor: 'rgba(255, 206, 86, 0.7)'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Fetch logs in last 24h
+        fetch('/api/TrafficLogs/network')
+            .then(res => res.json())
+            .then(data => {
+                const now = new Date();
+                const last24h = data.filter(l => l.logOccurrence && (now - new Date(l.logOccurrence)) < 24*60*60*1000);
+                document.getElementById('logsLast24h').textContent = last24h.length;
+            });
+    </script>
+} 

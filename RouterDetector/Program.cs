@@ -17,6 +17,14 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddSingleton<INetworkCaptureService, NetworkCaptureService>();
 builder.Services.AddHostedService<NetworkTrafficCaptureService>();
 
+// Add cookie authentication
+builder.Services.AddAuthentication("Cookies")
+    .AddCookie("Cookies", options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+    });
+
 var app = builder.Build();
 
 // ✅ Configure middleware pipeline
@@ -31,11 +39,12 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 // ✅ Define default route
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();

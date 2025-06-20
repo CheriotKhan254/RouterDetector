@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
 using RouterDetector.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace RouterDetector.Controllers
 {
+    [Authorize]
     public class DetectionlogsController : Controller
     {
         private readonly RouterDetectorContext _context;
