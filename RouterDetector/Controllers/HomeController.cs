@@ -81,6 +81,16 @@ namespace RouterDetector.Controllers
                 .Take(10)
                 .ToListAsync();
 
+            // Fetch all detection logs into a strongly-typed list for in-memory analytics
+            var allDetectionLogs = await _context.Detectionlogs.ToListAsync();
+
+            // Security analytics: malware/threats (in-memory LINQ to avoid dynamic lambda errors)
+            var malwareEvents = allDetectionLogs.Where(l => (l.EventType != null && (l.EventType.Contains("malware") || l.EventType.Contains("virus") || l.EventType.Contains("attack") || l.EventType.Contains("threat"))) || (l.Severty != null && l.Severty == "High")).ToList();
+            var totalMalwareEvents = malwareEvents.Count;
+            var recentMalwareEvents = malwareEvents.OrderByDescending(l => l.Timestamp).Take(10).ToList();
+            var malwareByType = malwareEvents.GroupBy(l => l.EventType ?? "Unknown").Select(g => new { EventType = g.Key, Count = g.Count() }).ToList();
+            var threatsBySeverity = malwareEvents.GroupBy(l => l.Severty ?? "Unknown").Select(g => new { Severty = g.Key, Count = g.Count() }).ToList();
+
             ViewBag.TotalNetworkLogs = totalNetworkLogs;
             ViewBag.TopSourceIps = topSourceIps;
             ViewBag.TopProtocols = topProtocols;
@@ -90,6 +100,10 @@ namespace RouterDetector.Controllers
             ViewBag.TopDestIps = topDestIps;
             ViewBag.RecentNetworkLogs = recentNetworkLogs;
             ViewBag.RecentDetectionLogs = recentDetectionLogs;
+            ViewBag.TotalMalwareEvents = totalMalwareEvents;
+            ViewBag.RecentMalwareEvents = recentMalwareEvents;
+            ViewBag.MalwareByType = malwareByType;
+            ViewBag.ThreatsBySeverity = threatsBySeverity;
             return View();
         }
 

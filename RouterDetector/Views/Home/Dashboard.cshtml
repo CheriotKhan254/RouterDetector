@@ -1,12 +1,15 @@
 @{
     ViewData["Title"] = "Dashboard";
-    var topSourceIps = ViewBag.TopSourceIps as IEnumerable<dynamic>;
-    var topProtocols = ViewBag.TopProtocols as IEnumerable<dynamic>;
-    var topDeviceTypes = ViewBag.TopDeviceTypes as IEnumerable<dynamic>;
-    var topEventTypes = ViewBag.TopEventTypes as IEnumerable<dynamic>;
-    var topDestIps = ViewBag.TopDestIps as IEnumerable<dynamic>;
-    var recentNetworkLogs = ViewBag.RecentNetworkLogs as IEnumerable<RouterDetector.Models.Networklogs>;
-    var recentDetectionLogs = ViewBag.RecentDetectionLogs as IEnumerable<RouterDetector.Models.Detectionlogs>;
+    var topSourceIps = (ViewBag.TopSourceIps as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var topProtocols = (ViewBag.TopProtocols as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var topDeviceTypes = (ViewBag.TopDeviceTypes as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var topEventTypes = (ViewBag.TopEventTypes as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var topDestIps = (ViewBag.TopDestIps as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var recentNetworkLogs = (ViewBag.RecentNetworkLogs as IEnumerable<RouterDetector.Models.Networklogs>)?.ToList() ?? new List<RouterDetector.Models.Networklogs>();
+    var recentDetectionLogs = (ViewBag.RecentDetectionLogs as IEnumerable<RouterDetector.Models.Detectionlogs>)?.ToList() ?? new List<RouterDetector.Models.Detectionlogs>();
+    var malwareByType = (ViewBag.MalwareByType as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var threatsBySeverity = (ViewBag.ThreatsBySeverity as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
+    var recentMalwareEvents = (ViewBag.RecentMalwareEvents as IEnumerable<RouterDetector.Models.Detectionlogs>)?.ToList() ?? new List<RouterDetector.Models.Detectionlogs>();
     bool hasNetworkLogs = (ViewBag.TotalNetworkLogs ?? 0) > 0;
     bool hasDetectionLogs = (ViewBag.TotalDetectionLogs ?? 0) > 0;
 }
@@ -50,11 +53,59 @@
 @if (hasNetworkLogs || hasDetectionLogs)
 {
 <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-danger shadow-sm h-100">
+            <div class="card-body text-center">
+                <i class="fa-solid fa-shield-virus fa-2x mb-2"></i>
+                <h5 class="card-title mt-2">Malware/Security Events</h5>
+                <p class="display-6 fw-bold mb-0">@ViewBag.TotalMalwareEvents</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Threats by Type</h5>
+                @if (malwareByType.Count == 0)
+                {
+                    <div class="text-muted text-center">No data available</div>
+                }
+                else
+                {
+                    <canvas id="malwareTypeChart" height="120"></canvas>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Threats by Severity</h5>
+                @if (threatsBySeverity.Count == 0)
+                {
+                    <div class="text-muted text-center">No data available</div>
+                }
+                else
+                {
+                    <canvas id="threatSeverityChart" height="120"></canvas>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mb-4">
     <div class="col-md-6 mb-4">
         <div class="card bg-white shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Network Logs by Protocol</h5>
-                <canvas id="protocolChart" height="180"></canvas>
+                @if (topProtocols.Count == 0)
+                {
+                    <div class="text-muted text-center">No data available</div>
+                }
+                else
+                {
+                    <canvas id="protocolChart" height="180"></canvas>
+                }
             </div>
         </div>
     </div>
@@ -62,7 +113,14 @@
         <div class="card bg-white shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Detection Logs by Device Type</h5>
-                <canvas id="deviceTypeChart" height="180"></canvas>
+                @if (topDeviceTypes.Count == 0)
+                {
+                    <div class="text-muted text-center">No data available</div>
+                }
+                else
+                {
+                    <canvas id="deviceTypeChart" height="180"></canvas>
+                }
             </div>
         </div>
     </div>
@@ -72,7 +130,14 @@
         <div class="card bg-white shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Detection Logs by Event Type</h5>
-                <canvas id="eventTypeChart" height="180"></canvas>
+                @if (topEventTypes.Count == 0)
+                {
+                    <div class="text-muted text-center">No data available</div>
+                }
+                else
+                {
+                    <canvas id="eventTypeChart" height="180"></canvas>
+                }
             </div>
         </div>
     </div>
@@ -177,13 +242,38 @@
         </div>
     </div>
 </div>
+<div class="row mb-4">
+    <div class="col-md-12 mb-4">
+        <div class="card bg-white shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title">Recent Malware/Security Events</h5>
+                <table class="table table-sm">
+                    <thead><tr><th>Time</th><th>Source IP</th><th>Event Type</th><th>Severity</th><th>Action</th><th>Notes</th></tr></thead>
+                    <tbody>
+                    @foreach (var log in recentMalwareEvents)
+                    {
+                        <tr>
+                            <td>@log.Timestamp.ToString("g")</td>
+                            <td>@log.SourceIP</td>
+                            <td>@log.EventType</td>
+                            <td>@log.Severty</td>
+                            <td>@log.ActionTaken</td>
+                            <td>@log.Notes</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 }
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Protocol Chart
-        const protocolLabels = [@string.Join(",", (topProtocols ?? new List<dynamic>()).Select(p => "'" + (p.Protocol ?? "Unknown") + "'"))];
-        const protocolData = [@string.Join(",", (topProtocols ?? new List<dynamic>()).Select(p => p.Count))];
+        const protocolLabels = [@string.Join(",", topProtocols.Select(p => "'" + (p.Protocol ?? "Unknown") + "'"))];
+        const protocolData = [@string.Join(",", topProtocols.Select(p => p.Count))];
         new Chart(document.getElementById('protocolChart'), {
             type: 'bar',
             data: {
@@ -197,8 +287,8 @@
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
         // Device Type Chart
-        const deviceTypeLabels = [@string.Join(",", (topDeviceTypes ?? new List<dynamic>()).Select(d => "'" + (d.DeviceType ?? "Unknown") + "'"))];
-        const deviceTypeData = [@string.Join(",", (topDeviceTypes ?? new List<dynamic>()).Select(d => d.Count))];
+        const deviceTypeLabels = [@string.Join(",", topDeviceTypes.Select(d => "'" + (d.DeviceType ?? "Unknown") + "'"))];
+        const deviceTypeData = [@string.Join(",", topDeviceTypes.Select(d => d.Count))];
         new Chart(document.getElementById('deviceTypeChart'), {
             type: 'pie',
             data: {
@@ -211,8 +301,8 @@
             options: { responsive: true }
         });
         // Event Type Chart
-        const eventTypeLabels = [@string.Join(",", (topEventTypes ?? new List<dynamic>()).Select(e => "'" + (e.EventType ?? "Unknown") + "'"))];
-        const eventTypeData = [@string.Join(",", (topEventTypes ?? new List<dynamic>()).Select(e => e.Count))];
+        const eventTypeLabels = [@string.Join(",", topEventTypes.Select(e => "'" + (e.EventType ?? "Unknown") + "'"))];
+        const eventTypeData = [@string.Join(",", topEventTypes.Select(e => e.Count))];
         new Chart(document.getElementById('eventTypeChart'), {
             type: 'bar',
             data: {
@@ -226,8 +316,8 @@
             options: { responsive: true, plugins: { legend: { display: false } } }
         });
         // Destination IP Chart
-        const destIpLabels = [@string.Join(",", (topDestIps ?? new List<dynamic>()).Select(d => "'" + (d.Ip ?? "Unknown") + "'"))];
-        const destIpData = [@string.Join(",", (topDestIps ?? new List<dynamic>()).Select(d => d.Count))];
+        const destIpLabels = [@string.Join(",", topDestIps.Select(d => "'" + (d.Ip ?? "Unknown") + "'"))];
+        const destIpData = [@string.Join(",", topDestIps.Select(d => d.Count))];
         new Chart(document.getElementById('destIpChart'), {
             type: 'bar',
             data: {
@@ -239,6 +329,35 @@
                 }]
             },
             options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Malware/Threats by Type Chart
+        const malwareTypeLabels = [@string.Join(",", malwareByType.Select(m => "'" + (m.EventType ?? "Unknown") + "'"))];
+        const malwareTypeData = [@string.Join(",", malwareByType.Select(m => m.Count))];
+        new Chart(document.getElementById('malwareTypeChart'), {
+            type: 'bar',
+            data: {
+                labels: malwareTypeLabels,
+                datasets: [{
+                    label: 'Count',
+                    data: malwareTypeData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)'
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        // Threats by Severity Chart
+        const threatSeverityLabels = [@string.Join(",", threatsBySeverity.Select(s => "'" + (s.Severty ?? "Unknown") + "'"))];
+        const threatSeverityData = [@string.Join(",", threatsBySeverity.Select(s => s.Count))];
+        new Chart(document.getElementById('threatSeverityChart'), {
+            type: 'pie',
+            data: {
+                labels: threatSeverityLabels,
+                datasets: [{
+                    data: threatSeverityData,
+                    backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#007bff', '#6c757d']
+                }]
+            },
+            options: { responsive: true }
         });
         // Fetch logs in last 24h
         fetch('/api/TrafficLogs/network')

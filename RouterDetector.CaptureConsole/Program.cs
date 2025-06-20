@@ -92,6 +92,23 @@ namespace RouterDetector.CaptureConsole
             using var db = new RouterDetectorContext(options);
             var now = DateTime.Now;
 
+            // Infer protocol
+            string protocol = ip.Protocol.ToString();
+
+            // Infer device type (basic example: check common ports)
+            string deviceType = "Unknown";
+            if (tcp.DestinationPort == 80 || tcp.SourcePort == 80 || tcp.DestinationPort == 443 || tcp.SourcePort == 443)
+                deviceType = "Web Server";
+            else if (tcp.DestinationPort == 23 || tcp.SourcePort == 23)
+                deviceType = "Telnet Device";
+            else if (tcp.DestinationPort == 22 || tcp.SourcePort == 22)
+                deviceType = "SSH Device";
+            else if (tcp.DestinationPort == 3389 || tcp.SourcePort == 3389)
+                deviceType = "RDP Device";
+
+            // Set institution (could be made configurable)
+            string institution = "DefaultInstitution";
+
             // Save to Networklogs (for flagged packets)
             var netLog = new Networklogs
             {
@@ -99,7 +116,7 @@ namespace RouterDetector.CaptureConsole
                 DstIp = ip.DestinationAddress.ToString(),
                 SrcPort = tcp.SourcePort,
                 DstPort = tcp.DestinationPort,
-                Protocol = "TCP",
+                Protocol = protocol,
                 RuleType = eventType,
                 LivePcap = true,
                 Message = $"{eventType} (Flags: {tcp.Flags})",
@@ -111,13 +128,14 @@ namespace RouterDetector.CaptureConsole
             var detLog = new Detectionlogs
             {
                 Timestamp = now,
+                Institution = institution,
                 SourceIP = ip.SourceAddress.ToString(),
-                DeviceType = "Unknown",
+                DeviceType = deviceType,
                 LogSource = "CaptureConsole",
                 EventType = eventType,
                 Severty = severity,
                 ActionTaken = "Logged",
-                Notes = $"Detected by real-time capture. SrcPort: {tcp.SourcePort}, DstPort: {tcp.DestinationPort}"
+                Notes = $"Detected by real-time capture. SrcPort: {tcp.SourcePort}, DstPort: {tcp.DestinationPort}, Protocol: {protocol}, DeviceType: {deviceType}"
             };
             db.Detectionlogs.Add(detLog);
 
