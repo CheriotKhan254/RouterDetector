@@ -7,6 +7,8 @@
     var topDestIps = ViewBag.TopDestIps as IEnumerable<dynamic>;
     var recentNetworkLogs = ViewBag.RecentNetworkLogs as IEnumerable<RouterDetector.Models.Networklogs>;
     var recentDetectionLogs = ViewBag.RecentDetectionLogs as IEnumerable<RouterDetector.Models.Detectionlogs>;
+    bool hasNetworkLogs = (ViewBag.TotalNetworkLogs ?? 0) > 0;
+    bool hasDetectionLogs = (ViewBag.TotalDetectionLogs ?? 0) > 0;
 }
 <h1 class="mb-4">Dashboard & Analytics</h1>
 <div class="row mb-4">
@@ -33,11 +35,20 @@
             <div class="card-body text-center">
                 <i class="fa-solid fa-clock fa-2x mb-2"></i>
                 <h5 class="card-title mt-2">Logs in Last 24h</h5>
-                <p class="display-6 fw-bold mb-0" id="logsLast24h">...</p>
+                <p class="display-6 fw-bold mb-0" id="logsLast24h">@((hasNetworkLogs) ? "..." : "0")</p>
             </div>
         </div>
     </div>
 </div>
+@if (!hasNetworkLogs && !hasDetectionLogs)
+{
+    <div class="alert alert-info text-center mt-4">
+        <h4>No logs or analytics to display yet.</h4>
+        <p>Run the capture console to start collecting network and detection logs.</p>
+    </div>
+}
+@if (hasNetworkLogs || hasDetectionLogs)
+{
 <div class="row mb-4">
     <div class="col-md-6 mb-4">
         <div class="card bg-white shadow-sm h-100">
@@ -166,6 +177,7 @@
         </div>
     </div>
 </div>
+}
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>

@@ -1,2 +1,128 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using System;
+using Microsoft.Extensions.Configuration;
+using PacketDotNet;
+using SharpPcap;
+using RouterDetector.Models;
+using RouterDetector.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace RouterDetector.CaptureConsole
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // TCP flag bitmasks
+            const ushort TCP_FLAG_RST = 0x04;
+            const ushort TCP_FLAG_SYN = 0x02;
+            const ushort TCP_FLAG_ACK = 0x10;
+
+            // Load configuration
+            var config = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appsettings.json")
+                .Build();
+            var optionsBuilder = new DbContextOptionsBuilder<RouterDetectorContext>();
+            optionsBuilder.UseSqlServer(config.GetConnectionString("Default-Connection"));
+
+            // List network devices
+            var devices = CaptureDeviceList.Instance;
+            if (devices.Count == 0)
+            {
+                Console.WriteLine("No devices found.");
+                return;
+            }
+            Console.WriteLine("Available devices:");
+            for (int i = 0; i < devices.Count; i++)
+                Console.WriteLine($"{i}: {devices[i].Description}");
+            Console.Write("Select device: ");
+            int deviceIndex = int.Parse(Console.ReadLine());
+            var device = devices[deviceIndex];
+
+            // Open device
+            device.OnPacketArrival += (sender, e) =>
+            {
+                try
+                {
+                    var rawPacket = e.GetPacket();
+                    var packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+                    var ipPacket = packet.Extract<PacketDotNet.IPPacket>();
+                    var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+
+                    if (ipPacket != null && tcpPacket != null)
+                    {
+                        // Suspicious: TCP RST
+                        if ((tcpPacket.Flags & TCP_FLAG_RST) != 0)
+                        {
+                            SaveDetection(ipPacket, tcpPacket, "TCP RST Detected", "Medium", optionsBuilder.Options);
+                        }
+                        // Suspicious: Telnet traffic
+                        if (tcpPacket.DestinationPort == 23 || tcpPacket.SourcePort == 23)
+                        {
+                            SaveDetection(ipPacket, tcpPacket, "Telnet Traffic Detected", "High", optionsBuilder.Options);
+                        }
+                        // Suspicious: SYN scan (SYN without ACK)
+                        if ((tcpPacket.Flags & TCP_FLAG_SYN) != 0 && (tcpPacket.Flags & TCP_FLAG_ACK) == 0)
+                        {
+                            SaveDetection(ipPacket, tcpPacket, "Possible SYN Scan", "High", optionsBuilder.Options);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Error processing packet: " + ex.Message);
+                }
+            };
+
+            device.Open(); // Promiscuous mode by default
+            Console.WriteLine("Capturing on " + device.Description + " (press Ctrl+C to stop)");
+            device.StartCapture();
+            Console.CancelKeyPress += (s, e) =>
+            {
+                device.StopCapture();
+                device.Close();
+                Console.WriteLine("Capture stopped.");
+            };
+            // Keep the app running
+            while (true) { System.Threading.Thread.Sleep(1000); }
+        }
+
+        static void SaveDetection(IPPacket ip, TcpPacket tcp, string eventType, string severity, DbContextOptions<RouterDetectorContext> options)
+        {
+            using var db = new RouterDetectorContext(options);
+            var now = DateTime.Now;
+
+            // Save to Networklogs (for flagged packets)
+            var netLog = new Networklogs
+            {
+                SrcIp = ip.SourceAddress.ToString(),
+                DstIp = ip.DestinationAddress.ToString(),
+                SrcPort = tcp.SourcePort,
+                DstPort = tcp.DestinationPort,
+                Protocol = "TCP",
+                RuleType = eventType,
+                LivePcap = true,
+                Message = $"{eventType} (Flags: {tcp.Flags})",
+                LogOccurrence = now
+            };
+            db.Networklogs.Add(netLog);
+
+            // Save to Detectionlogs
+            var detLog = new Detectionlogs
+            {
+                Timestamp = now,
+                SourceIP = ip.SourceAddress.ToString(),
+                DeviceType = "Unknown",
+                LogSource = "CaptureConsole",
+                EventType = eventType,
+                Severty = severity,
+                ActionTaken = "Logged",
+                Notes = $"Detected by real-time capture. SrcPort: {tcp.SourcePort}, DstPort: {tcp.DestinationPort}"
+            };
+            db.Detectionlogs.Add(detLog);
+
+            db.SaveChanges();
+            Console.WriteLine($"[!] {eventType} detected: {ip.SourceAddress} -> {ip.DestinationAddress} ({tcp.SourcePort} -> {tcp.DestinationPort})");
+        }
+    }
+}

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
 using RouterDetector.Models;
-using RouterDetector.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,13 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<RouterDetectorContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default-Connection")));
 
-// ✅ Register the background service for packet capture
-builder.Services.AddHostedService<NetworkTrafficCaptureService>();
-
 // ✅ Add MVC controller and view services
 builder.Services.AddControllersWithViews();
-builder.Services.AddSingleton<INetworkCaptureService, NetworkCaptureService>();
-builder.Services.AddHostedService<NetworkTrafficCaptureService>();
 
 // Add cookie authentication
 builder.Services.AddAuthentication("Cookies")
