@@ -66,6 +66,15 @@ namespace RouterDetector.CaptureConsole
                         {
                             SaveDetection(ipPacket, tcpPacket, "Possible SYN Scan", "High", optionsBuilder.Options);
                         }
+                        // HTTP/HTTPS Traffic
+                        if (tcpPacket.DestinationPort == 80 || tcpPacket.SourcePort == 80)
+                        {
+                            SaveDetection(ipPacket, tcpPacket, "HTTP Traffic", "Low", optionsBuilder.Options);
+                        }
+                        if (tcpPacket.DestinationPort == 443 || tcpPacket.SourcePort == 443)
+                        {
+                            SaveDetection(ipPacket, tcpPacket, "HTTPS Traffic", "Low", optionsBuilder.Options);
+                        }
                     }
                 }
                 catch (Exception ex)

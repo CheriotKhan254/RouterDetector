@@ -13,359 +13,366 @@
     bool hasNetworkLogs = (ViewBag.TotalNetworkLogs ?? 0) > 0;
     bool hasDetectionLogs = (ViewBag.TotalDetectionLogs ?? 0) > 0;
 }
-<h1 class="mb-4">Dashboard & Analytics</h1>
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-primary shadow-sm h-100">
-            <div class="card-body text-center">
-                <i class="fa-solid fa-network-wired fa-2x mb-2"></i>
-                <h5 class="card-title mt-2">Total Network Logs</h5>
-                <p class="display-6 fw-bold mb-0">@ViewBag.TotalNetworkLogs</p>
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4 mb-4">Network Analytics Dashboard</h1>
+
+    <!-- Stats Cards Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-white-50">Total Network Logs</div>
+                            <div class="display-6">@ViewBag.TotalNetworkLogs</div>
+                        </div>
+                        <i class="fas fa-network-wired fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-white-50">Detection Logs</div>
+                            <div class="display-6">@ViewBag.TotalDetectionLogs</div>
+                        </div>
+                        <i class="fas fa-shield-virus fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-white-50">Security Events</div>
+                            <div class="display-6">@ViewBag.TotalMalwareEvents</div>
+                        </div>
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small text-white-50">Last 24h Activity</div>
+                            <div class="display-6" id="logsLast24h">...</div>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-success shadow-sm h-100">
-            <div class="card-body text-center">
-                <i class="fa-solid fa-bug fa-2x mb-2"></i>
-                <h5 class="card-title mt-2">Total Detection Logs</h5>
-                <p class="display-6 fw-bold mb-0">@ViewBag.TotalDetectionLogs</p>
+
+    @if (!hasNetworkLogs && !hasDetectionLogs)
+    {
+        <div class="alert alert-info">
+            <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>No Data Available</h4>
+            <p class="mb-0">Start the capture console to begin collecting network and security data.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Charts Row 1 -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-8">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Network Traffic Overview</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active" onclick="updateTimeRange('24h')">24h</button>
+                            <button class="btn btn-outline-secondary" onclick="updateTimeRange('7d')">7d</button>
+                            <button class="btn btn-outline-secondary" onclick="updateTimeRange('30d')">30d</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="trafficOverview" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Protocol Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="protocolChart" height="260"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-info shadow-sm h-100">
-            <div class="card-body text-center">
-                <i class="fa-solid fa-clock fa-2x mb-2"></i>
-                <h5 class="card-title mt-2">Logs in Last 24h</h5>
-                <p class="display-6 fw-bold mb-0" id="logsLast24h">@((hasNetworkLogs) ? "..." : "0")</p>
+
+        <!-- Charts Row 2 -->
+        <div class="row g-3 mb-4">
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Top Source IPs</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="sourceIpsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Security Events by Type</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="securityEventsChart" height="200"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
+
+        <!-- Recent Activity Table -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#networkLogs">Network Logs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#securityEvents">Security Events</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="networkLogs">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Source IP</th>
+                                        <th>Destination IP</th>
+                                        <th>Protocol</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var log in recentNetworkLogs.Take(5))
+                                    {
+                                        <tr>
+                                            <td>@log.LogOccurrence?.ToString("HH:mm:ss")</td>
+                                            <td>@log.SrcIp</td>
+                                            <td>@log.DstIp</td>
+                                            <td>@log.Protocol</td>
+                                            <td>@log.Message</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="securityEvents">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Source IP</th>
+                                        <th>Event Type</th>
+                                        <th>Severity</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var log in recentMalwareEvents.Take(5))
+                                    {
+                                        <tr>
+                                            <td>@log.Timestamp.ToString("HH:mm:ss")</td>
+                                            <td>@log.SourceIP</td>
+                                            <td>@log.EventType</td>
+                                            <td>
+                                                <span class="badge bg-@(log.Severty == "High" ? "danger" : 
+                                                                       log.Severty == "Medium" ? "warning" : "info")">
+                                                    @log.Severty
+                                                </span>
+                                            </td>
+                                            <td>@log.ActionTaken</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
-@if (!hasNetworkLogs && !hasDetectionLogs)
-{
-    <div class="alert alert-info text-center mt-4">
-        <h4>No logs or analytics to display yet.</h4>
-        <p>Run the capture console to start collecting network and detection logs.</p>
-    </div>
-}
-@if (hasNetworkLogs || hasDetectionLogs)
-{
-<div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-danger shadow-sm h-100">
-            <div class="card-body text-center">
-                <i class="fa-solid fa-shield-virus fa-2x mb-2"></i>
-                <h5 class="card-title mt-2">Malware/Security Events</h5>
-                <p class="display-6 fw-bold mb-0">@ViewBag.TotalMalwareEvents</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Threats by Type</h5>
-                @if (malwareByType.Count == 0)
-                {
-                    <div class="text-muted text-center">No data available</div>
-                }
-                else
-                {
-                    <canvas id="malwareTypeChart" height="120"></canvas>
-                }
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4 mb-3">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Threats by Severity</h5>
-                @if (threatsBySeverity.Count == 0)
-                {
-                    <div class="text-muted text-center">No data available</div>
-                }
-                else
-                {
-                    <canvas id="threatSeverityChart" height="120"></canvas>
-                }
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Network Logs by Protocol</h5>
-                @if (topProtocols.Count == 0)
-                {
-                    <div class="text-muted text-center">No data available</div>
-                }
-                else
-                {
-                    <canvas id="protocolChart" height="180"></canvas>
-                }
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Detection Logs by Device Type</h5>
-                @if (topDeviceTypes.Count == 0)
-                {
-                    <div class="text-muted text-center">No data available</div>
-                }
-                else
-                {
-                    <canvas id="deviceTypeChart" height="180"></canvas>
-                }
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Detection Logs by Event Type</h5>
-                @if (topEventTypes.Count == 0)
-                {
-                    <div class="text-muted text-center">No data available</div>
-                }
-                else
-                {
-                    <canvas id="eventTypeChart" height="180"></canvas>
-                }
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Network Logs by Destination IP</h5>
-                <canvas id="destIpChart" height="180"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Top Source IPs</h5>
-                <table class="table table-sm">
-                    <thead><tr><th>IP</th><th>Count</th></tr></thead>
-                    <tbody>
-                    @if (topSourceIps != null)
-                    {
-                        foreach (var ip in topSourceIps)
-                        {
-                            <tr><td>@ip.Ip</td><td>@ip.Count</td></tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Top Protocols</h5>
-                <table class="table table-sm">
-                    <thead><tr><th>Protocol</th><th>Count</th></tr></thead>
-                    <tbody>
-                    @if (topProtocols != null)
-                    {
-                        foreach (var proto in topProtocols)
-                        {
-                            <tr><td>@proto.Protocol</td><td>@proto.Count</td></tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Recent Network Logs</h5>
-                <table class="table table-sm">
-                    <thead><tr><th>Time</th><th>Src IP</th><th>Dst IP</th><th>Protocol</th><th>Message</th></tr></thead>
-                    <tbody>
-                    @if (recentNetworkLogs != null)
-                    {
-                        foreach (var log in recentNetworkLogs)
-                        {
-                            <tr>
-                                <td>@log.LogOccurrence?.ToString("g")</td>
-                                <td>@log.SrcIp</td>
-                                <td>@log.DstIp</td>
-                                <td>@log.Protocol</td>
-                                <td>@log.Message</td>
-                            </tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Recent Detection Logs</h5>
-                <table class="table table-sm">
-                    <thead><tr><th>Time</th><th>Source IP</th><th>Device Type</th><th>Event Type</th><th>Severity</th></tr></thead>
-                    <tbody>
-                    @if (recentDetectionLogs != null)
-                    {
-                        foreach (var log in recentDetectionLogs)
-                        {
-                            <tr>
-                                <td>@log.Timestamp.ToString("g")</td>
-                                <td>@log.SourceIP</td>
-                                <td>@log.DeviceType</td>
-                                <td>@log.EventType</td>
-                                <td>@log.Severty</td>
-                            </tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row mb-4">
-    <div class="col-md-12 mb-4">
-        <div class="card bg-white shadow-sm h-100">
-            <div class="card-body">
-                <h5 class="card-title">Recent Malware/Security Events</h5>
-                <table class="table table-sm">
-                    <thead><tr><th>Time</th><th>Source IP</th><th>Event Type</th><th>Severity</th><th>Action</th><th>Notes</th></tr></thead>
-                    <tbody>
-                    @foreach (var log in recentMalwareEvents)
-                    {
-                        <tr>
-                            <td>@log.Timestamp.ToString("g")</td>
-                            <td>@log.SourceIP</td>
-                            <td>@log.EventType</td>
-                            <td>@log.Severty</td>
-                            <td>@log.ActionTaken</td>
-                            <td>@log.Notes</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-}
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
     <script>
-        // Protocol Chart
-        const protocolLabels = [@string.Join(",", topProtocols.Select(p => "'" + (p.Protocol ?? "Unknown") + "'"))];
-        const protocolData = [@string.Join(",", topProtocols.Select(p => p.Count))];
-        new Chart(document.getElementById('protocolChart'), {
+        // Chart.js Global Configuration
+        Chart.defaults.font.family = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.plugins.legend.position = 'bottom';
+
+        // Color Schemes
+        const colors = {
+            primary: 'rgba(13, 110, 253, 0.7)',
+            success: 'rgba(25, 135, 84, 0.7)',
+            warning: 'rgba(255, 193, 7, 0.7)',
+            danger: 'rgba(220, 53, 69, 0.7)',
+            info: 'rgba(13, 202, 240, 0.7)'
+        };
+
+        // Protocol Distribution Chart
+        const protocolChart = new Chart(document.getElementById('protocolChart'), {
+            type: 'doughnut',
+            data: {
+                labels: [@Html.Raw(string.Join(",", topProtocols.Select(p => $"'{p.Protocol ?? "Unknown"}'")))],
+                datasets: [{
+                    data: [@string.Join(",", topProtocols.Select(p => p.Count))],
+                    backgroundColor: Object.values(colors)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+
+        // Traffic Overview Chart
+        const trafficData = @Json.Serialize(recentNetworkLogs
+            .GroupBy(l => l.LogOccurrence?.ToString("HH:00"))
+            .Select(g => new { Hour = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Hour));
+
+        const trafficChart = new Chart(document.getElementById('trafficOverview'), {
+            type: 'line',
+            data: {
+                labels: trafficData.map(d => d.Hour),
+                datasets: [{
+                    label: 'Traffic Volume',
+                    data: trafficData.map(d => d.Count),
+                    borderColor: colors.primary,
+                    backgroundColor: colors.primary,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Source IPs Chart
+        const sourceIpsChart = new Chart(document.getElementById('sourceIpsChart'), {
             type: 'bar',
             data: {
-                labels: protocolLabels,
+                labels: [@Html.Raw(string.Join(",", topSourceIps.Select(ip => $"'{ip.Ip}'")))],
                 datasets: [{
-                    label: 'Count',
-                    data: protocolData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                    label: 'Connections',
+                    data: [@string.Join(",", topSourceIps.Select(ip => ip.Count))],
+                    backgroundColor: colors.info
                 }]
             },
-            options: { responsive: true, plugins: { legend: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
-        // Device Type Chart
-        const deviceTypeLabels = [@string.Join(",", topDeviceTypes.Select(d => "'" + (d.DeviceType ?? "Unknown") + "'"))];
-        const deviceTypeData = [@string.Join(",", topDeviceTypes.Select(d => d.Count))];
-        new Chart(document.getElementById('deviceTypeChart'), {
-            type: 'pie',
-            data: {
-                labels: deviceTypeLabels,
-                datasets: [{
-                    data: deviceTypeData,
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d']
-                }]
-            },
-            options: { responsive: true }
-        });
-        // Event Type Chart
-        const eventTypeLabels = [@string.Join(",", topEventTypes.Select(e => "'" + (e.EventType ?? "Unknown") + "'"))];
-        const eventTypeData = [@string.Join(",", topEventTypes.Select(e => e.Count))];
-        new Chart(document.getElementById('eventTypeChart'), {
+
+        // Security Events Chart
+        const securityChart = new Chart(document.getElementById('securityEventsChart'), {
             type: 'bar',
             data: {
-                labels: eventTypeLabels,
+                labels: [@Html.Raw(string.Join(",", malwareByType.Select(m => $"'{m.EventType}'")))],
                 datasets: [{
-                    label: 'Count',
-                    data: eventTypeData,
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)'
+                    label: 'Events',
+                    data: [@string.Join(",", malwareByType.Select(m => m.Count))],
+                    backgroundColor: colors.danger
                 }]
             },
-            options: { responsive: true, plugins: { legend: { display: false } } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
         });
-        // Destination IP Chart
-        const destIpLabels = [@string.Join(",", topDestIps.Select(d => "'" + (d.Ip ?? "Unknown") + "'"))];
-        const destIpData = [@string.Join(",", topDestIps.Select(d => d.Count))];
-        new Chart(document.getElementById('destIpChart'), {
-            type: 'bar',
-            data: {
-                labels: destIpLabels,
-                datasets: [{
-                    label: 'Count',
-                    data: destIpData,
-                    backgroundColor: 'rgba(255, 206, 86, 0.7)'
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-        // Malware/Threats by Type Chart
-        const malwareTypeLabels = [@string.Join(",", malwareByType.Select(m => "'" + (m.EventType ?? "Unknown") + "'"))];
-        const malwareTypeData = [@string.Join(",", malwareByType.Select(m => m.Count))];
-        new Chart(document.getElementById('malwareTypeChart'), {
-            type: 'bar',
-            data: {
-                labels: malwareTypeLabels,
-                datasets: [{
-                    label: 'Count',
-                    data: malwareTypeData,
-                    backgroundColor: 'rgba(220, 53, 69, 0.7)'
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { display: false } } }
-        });
-        // Threats by Severity Chart
-        const threatSeverityLabels = [@string.Join(",", threatsBySeverity.Select(s => "'" + (s.Severty ?? "Unknown") + "'"))];
-        const threatSeverityData = [@string.Join(",", threatsBySeverity.Select(s => s.Count))];
-        new Chart(document.getElementById('threatSeverityChart'), {
-            type: 'pie',
-            data: {
-                labels: threatSeverityLabels,
-                datasets: [{
-                    data: threatSeverityData,
-                    backgroundColor: ['#dc3545', '#ffc107', '#28a745', '#007bff', '#6c757d']
-                }]
-            },
-            options: { responsive: true }
-        });
-        // Fetch logs in last 24h
-        fetch('/api/TrafficLogs/network')
-            .then(res => res.json())
-            .then(data => {
-                const now = new Date();
-                const last24h = data.filter(l => l.logOccurrence && (now - new Date(l.logOccurrence)) < 24*60*60*1000);
-                document.getElementById('logsLast24h').textContent = last24h.length;
+
+        // Update time range for traffic overview
+        function updateTimeRange(range) {
+            // This would typically fetch new data from the server
+            // For now, just update the button states
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
             });
+            event.target.classList.add('active');
+        }
+
+        // Update real-time counters
+        setInterval(() => {
+            fetch('/api/TrafficLogs/network')
+                .then(res => res.json())
+                .then(data => {
+                    const now = new Date();
+                    const last24h = data.filter(l => l.logOccurrence && 
+                        (now - new Date(l.logOccurrence)) < 24*60*60*1000);
+                    document.getElementById('logsLast24h').textContent = last24h.length;
+                });
+        }, 30000);
     </script>
-} 
+}
