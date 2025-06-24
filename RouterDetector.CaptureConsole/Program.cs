@@ -45,6 +45,7 @@ namespace RouterDetector.CaptureConsole
             {
 
                 captureService.StartService();
+            }
 
 
                 Console.WriteLine("Press Enter to exit");
