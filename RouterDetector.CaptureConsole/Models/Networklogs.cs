@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace RouterDetector.Models
+namespace RouterDetector.CaptureConsole.Models
 {
     public class Networklogs
     {
@@ -16,4 +16,4 @@ namespace RouterDetector.Models
         public string? Message { get; set; }
         public DateTime? LogOccurrence { get; set; }
     }
-} 
+}

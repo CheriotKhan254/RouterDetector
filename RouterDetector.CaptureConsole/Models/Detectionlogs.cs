@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace RouterDetector.Models
+namespace RouterDetector.CaptureConsole.Models
 {
     public class Detectionlogs
     {
@@ -16,4 +16,4 @@ namespace RouterDetector.Models
         public string? ActionTaken { get; set; }
         public string? Notes { get; set; }
     }
-} 
+}

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RouterDetector.Models;
+using RouterDetector.CaptureConsole.Models;
 
 namespace RouterDetector.Data
 {
@@ -14,4 +14,4 @@ namespace RouterDetector.Data
         public DbSet<Networklogs> Networklogs { get; set; } = default!;
         // User model not needed in console
     }
-} 
+}

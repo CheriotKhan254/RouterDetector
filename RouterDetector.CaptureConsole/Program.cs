@@ -1,10 +1,6 @@
-﻿using System;
-using Microsoft.Extensions.Configuration;
-using PacketDotNet;
-using SharpPcap;
-using RouterDetector.Models;
-using RouterDetector.Data;
-using Microsoft.EntityFrameworkCore;
+﻿using RouterDetector.CaptureConsole.DetectionProtocols;
+using RouterDetector.CaptureConsole.Models;
+using RouterDetector.CaptureConsole.Services;
 
 namespace RouterDetector.CaptureConsole
 {
@@ -12,144 +8,72 @@ namespace RouterDetector.CaptureConsole
     {
         static void Main(string[] args)
         {
-            // TCP flag bitmasks
-            const ushort TCP_FLAG_RST = 0x04;
-            const ushort TCP_FLAG_SYN = 0x02;
-            const ushort TCP_FLAG_ACK = 0x10;
 
-            // Load configuration
-            var config = new ConfigurationBuilder()
-                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                .AddJsonFile("appsettings.json")
-                .Build();
-            var optionsBuilder = new DbContextOptionsBuilder<RouterDetectorContext>();
-            optionsBuilder.UseSqlServer(config.GetConnectionString("Default-Connection"));
+            CapturePacketsService captureService = new();
+            DetectionEngine engine = new();
 
-            // List network devices
-            var devices = CaptureDeviceList.Instance;
-            if (devices.Count == 0)
-            {
-                Console.WriteLine("No devices found.");
-                return;
-            }
-            Console.WriteLine("Available devices:");
-            for (int i = 0; i < devices.Count; i++)
-                Console.WriteLine($"{i}: {devices[i].Description}");
-            Console.Write("Select device: ");
-            int deviceIndex = int.Parse(Console.ReadLine());
-            var device = devices[deviceIndex];
 
-            // Open device
-            device.OnPacketArrival += (sender, e) =>
+
+
+            // Subscribe to packet events
+            captureService.OnPacketCaptured += (packet) =>
             {
                 try
                 {
-                    var rawPacket = e.GetPacket();
-                    var packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
-                    var ipPacket = packet.Extract<PacketDotNet.IPPacket>();
-                    var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+                    // Log and analyze
+                    Console.WriteLine($"[{packet.Timestamp:HH:mm:ss}] {packet.SourceIp} → {packet.DestinationIp}");
+                    // Perform analysis
+                    engine.AnalyzePacket(packet);
 
-                    if (ipPacket != null && tcpPacket != null)
+                    // OR Using Option 2 (first threat only)
+                    var threat = engine.AnalyzePacket(packet);
+                    if (threat != null)
                     {
-                        // Suspicious: TCP RST
-                        if ((tcpPacket.Flags & TCP_FLAG_RST) != 0)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "TCP RST Detected", "Medium", optionsBuilder.Options);
-                        }
-                        // Suspicious: Telnet traffic
-                        if (tcpPacket.DestinationPort == 23 || tcpPacket.SourcePort == 23)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "Telnet Traffic Detected", "High", optionsBuilder.Options);
-                        }
-                        // Suspicious: SYN scan (SYN without ACK)
-                        if ((tcpPacket.Flags & TCP_FLAG_SYN) != 0 && (tcpPacket.Flags & TCP_FLAG_ACK) == 0)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "Possible SYN Scan", "High", optionsBuilder.Options);
-                        }
-                        // HTTP/HTTPS Traffic
-                        if (tcpPacket.DestinationPort == 80 || tcpPacket.SourcePort == 80)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "HTTP Traffic", "Low", optionsBuilder.Options);
-                        }
-                        if (tcpPacket.DestinationPort == 443 || tcpPacket.SourcePort == 443)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "HTTPS Traffic", "Low", optionsBuilder.Options);
-                        }
+                        LogThreat(threat);
+
                     }
+
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error processing packet: " + ex.Message);
+                    Console.WriteLine($"Packet analysis failed: {ex.Message}");
                 }
+
             };
 
-            device.Open(); // Promiscuous mode by default
-            Console.WriteLine("Capturing on " + device.Description + " (press Ctrl+C to stop)");
-            device.StartCapture();
-            Console.CancelKeyPress += (s, e) =>
+            try
             {
-                device.StopCapture();
-                device.Close();
-                Console.WriteLine("Capture stopped.");
-            };
-            // Keep the app running
-            while (true) { System.Threading.Thread.Sleep(1000); }
+
+                captureService.StartService();
+
+
+                Console.WriteLine("Press Enter to exit");
+                Console.ReadKey();
+            }
+            finally
+            {
+                captureService.StopService();
+            }
         }
 
-        static void SaveDetection(IPPacket ip, TcpPacket tcp, string eventType, string severity, DbContextOptions<RouterDetectorContext> options)
+        private static void LogThreat(DetectionResult threat)
         {
-            using var db = new RouterDetectorContext(options);
-            var now = DateTime.Now;
-
-            // Infer protocol
-            string protocol = ip.Protocol.ToString();
-
-            // Infer device type (basic example: check common ports)
-            string deviceType = "Unknown";
-            if (tcp.DestinationPort == 80 || tcp.SourcePort == 80 || tcp.DestinationPort == 443 || tcp.SourcePort == 443)
-                deviceType = "Web Server";
-            else if (tcp.DestinationPort == 23 || tcp.SourcePort == 23)
-                deviceType = "Telnet Device";
-            else if (tcp.DestinationPort == 22 || tcp.SourcePort == 22)
-                deviceType = "SSH Device";
-            else if (tcp.DestinationPort == 3389 || tcp.SourcePort == 3389)
-                deviceType = "RDP Device";
-
-            // Set institution (could be made configurable)
-            string institution = "DefaultInstitution";
-
-            // Save to Networklogs (for flagged packets)
-            var netLog = new Networklogs
+            var color = threat.Severity switch
             {
-                SrcIp = ip.SourceAddress.ToString(),
-                DstIp = ip.DestinationAddress.ToString(),
-                SrcPort = tcp.SourcePort,
-                DstPort = tcp.DestinationPort,
-                Protocol = protocol,
-                RuleType = eventType,
-                LivePcap = true,
-                Message = $"{eventType} (Flags: {tcp.Flags})",
-                LogOccurrence = now
+                ThreatSeverity.Low => ConsoleColor.Yellow,
+                ThreatSeverity.Medium => ConsoleColor.DarkYellow,
+                ThreatSeverity.High => ConsoleColor.Red,
+                ThreatSeverity.Critical => ConsoleColor.Magenta,
+                _ => ConsoleColor.Gray
             };
-            db.Networklogs.Add(netLog);
 
-            // Save to Detectionlogs
-            var detLog = new Detectionlogs
-            {
-                Timestamp = now,
-                Institution = institution,
-                SourceIP = ip.SourceAddress.ToString(),
-                DeviceType = deviceType,
-                LogSource = "CaptureConsole",
-                EventType = eventType,
-                Severty = severity,
-                ActionTaken = "Logged",
-                Notes = $"Detected by real-time capture. SrcPort: {tcp.SourcePort}, DstPort: {tcp.DestinationPort}, Protocol: {protocol}, DeviceType: {deviceType}"
-            };
-            db.Detectionlogs.Add(detLog);
+            Console.ForegroundColor = color;
+            Console.WriteLine(threat.GetSummary());
+            Console.ResetColor();
 
-            db.SaveChanges();
-            Console.WriteLine($"[!] {eventType} detected: {ip.SourceAddress} -> {ip.DestinationAddress} ({tcp.SourcePort} -> {tcp.DestinationPort})");
+            // Optional detailed logging
+            Console.WriteLine($"Source: {threat.OriginalPacket.SourceIp}");
+            Console.WriteLine($"Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}");
         }
     }
 }
