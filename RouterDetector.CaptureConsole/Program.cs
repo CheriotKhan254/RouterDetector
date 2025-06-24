@@ -25,31 +25,25 @@ namespace RouterDetector.CaptureConsole
             var optionsBuilder = new DbContextOptionsBuilder<RouterDetectorContext>();
             optionsBuilder.UseSqlServer(config.GetConnectionString("Default-Connection"));
 
-            // List network devices
-            var devices = CaptureDeviceList.Instance;
-            if (devices.Count == 0)
-            {
-                Console.WriteLine("No devices found.");
-                return;
-            }
-
             while (true)
             {
+                // List network devices
+                var devices = CaptureDeviceList.Instance;
+                if (devices.Count == 0)
+                {
+                    Console.WriteLine("No devices found.");
+                    return;
+                }
                 Console.WriteLine("Available devices:");
                 for (int i = 0; i < devices.Count; i++)
-                    Console.WriteLine($"{i}: {devices[i].Description}");
-                Console.Write("Select device (or 'q' to quit): ");
-                var input = Console.ReadLine();
-                if (input?.Trim().ToLower() == "q")
-                    break;
-                if (!int.TryParse(input, out int deviceIndex) || deviceIndex < 0 || deviceIndex >= devices.Count)
                 {
-                    Console.WriteLine("Invalid selection. Try again.");
-                    continue;
+                    Console.WriteLine($"{i}: {devices[i].Description}");
                 }
+                Console.Write("Select device: ");
+                int deviceIndex = int.Parse(Console.ReadLine());
                 var device = devices[deviceIndex];
-                bool captureStopped = false;
 
+                // Open device
                 device.OnPacketArrival += (sender, e) =>
                 {
                     try
@@ -96,21 +90,17 @@ namespace RouterDetector.CaptureConsole
                 device.Open(); // Promiscuous mode by default
                 Console.WriteLine("Capturing on " + device.Description + " (press Ctrl+C to stop)");
                 device.StartCapture();
-                ConsoleCancelEventHandler cancelHandler = (s, e) =>
+                Console.CancelKeyPress += (s, e) =>
                 {
                     device.StopCapture();
                     device.Close();
-                    captureStopped = true;
                     Console.WriteLine("Capture stopped.");
-                    e.Cancel = true; // Prevent app from exiting
+                    e.Cancel = true; // Prevent application exit
                 };
-                Console.CancelKeyPress += cancelHandler;
 
-                // Wait until capture is stopped
-                while (!captureStopped) { System.Threading.Thread.Sleep(500); }
-
-                Console.CancelKeyPress -= cancelHandler;
-                // Prompt to select another device or quit (loop continues)
+                // Wait for user to stop capture
+                Console.WriteLine("Press Enter to select another device or Ctrl+C to exit.");
+                Console.ReadLine();
             }
         }
 
@@ -125,13 +115,21 @@ namespace RouterDetector.CaptureConsole
             // Infer device type (basic example: check common ports)
             string deviceType = "Unknown";
             if (tcp.DestinationPort == 80 || tcp.SourcePort == 80 || tcp.DestinationPort == 443 || tcp.SourcePort == 443)
+            {
                 deviceType = "Web Server";
+            }
             else if (tcp.DestinationPort == 23 || tcp.SourcePort == 23)
+            {
                 deviceType = "Telnet Device";
+            }
             else if (tcp.DestinationPort == 22 || tcp.SourcePort == 22)
+            {
                 deviceType = "SSH Device";
+            }
             else if (tcp.DestinationPort == 3389 || tcp.SourcePort == 3389)
+            {
                 deviceType = "RDP Device";
+            }
 
             // Set institution (could be made configurable)
             string institution = "DefaultInstitution";
