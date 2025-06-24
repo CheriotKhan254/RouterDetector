@@ -32,68 +32,86 @@ namespace RouterDetector.CaptureConsole
                 Console.WriteLine("No devices found.");
                 return;
             }
-            Console.WriteLine("Available devices:");
-            for (int i = 0; i < devices.Count; i++)
-                Console.WriteLine($"{i}: {devices[i].Description}");
-            Console.Write("Select device: ");
-            int deviceIndex = int.Parse(Console.ReadLine());
-            var device = devices[deviceIndex];
 
-            // Open device
-            device.OnPacketArrival += (sender, e) =>
+            while (true)
             {
-                try
+                Console.WriteLine("Available devices:");
+                for (int i = 0; i < devices.Count; i++)
+                    Console.WriteLine($"{i}: {devices[i].Description}");
+                Console.Write("Select device (or 'q' to quit): ");
+                var input = Console.ReadLine();
+                if (input?.Trim().ToLower() == "q")
+                    break;
+                if (!int.TryParse(input, out int deviceIndex) || deviceIndex < 0 || deviceIndex >= devices.Count)
                 {
-                    var rawPacket = e.GetPacket();
-                    var packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
-                    var ipPacket = packet.Extract<PacketDotNet.IPPacket>();
-                    var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+                    Console.WriteLine("Invalid selection. Try again.");
+                    continue;
+                }
+                var device = devices[deviceIndex];
+                bool captureStopped = false;
 
-                    if (ipPacket != null && tcpPacket != null)
+                device.OnPacketArrival += (sender, e) =>
+                {
+                    try
                     {
-                        // Suspicious: TCP RST
-                        if ((tcpPacket.Flags & TCP_FLAG_RST) != 0)
+                        var rawPacket = e.GetPacket();
+                        var packet = PacketDotNet.Packet.ParsePacket(rawPacket.LinkLayerType, rawPacket.Data);
+                        var ipPacket = packet.Extract<PacketDotNet.IPPacket>();
+                        var tcpPacket = packet.Extract<PacketDotNet.TcpPacket>();
+
+                        if (ipPacket != null && tcpPacket != null)
                         {
-                            SaveDetection(ipPacket, tcpPacket, "TCP RST Detected", "Medium", optionsBuilder.Options);
-                        }
-                        // Suspicious: Telnet traffic
-                        if (tcpPacket.DestinationPort == 23 || tcpPacket.SourcePort == 23)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "Telnet Traffic Detected", "High", optionsBuilder.Options);
-                        }
-                        // Suspicious: SYN scan (SYN without ACK)
-                        if ((tcpPacket.Flags & TCP_FLAG_SYN) != 0 && (tcpPacket.Flags & TCP_FLAG_ACK) == 0)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "Possible SYN Scan", "High", optionsBuilder.Options);
-                        }
-                        // HTTP/HTTPS Traffic
-                        if (tcpPacket.DestinationPort == 80 || tcpPacket.SourcePort == 80)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "HTTP Traffic", "Low", optionsBuilder.Options);
-                        }
-                        if (tcpPacket.DestinationPort == 443 || tcpPacket.SourcePort == 443)
-                        {
-                            SaveDetection(ipPacket, tcpPacket, "HTTPS Traffic", "Low", optionsBuilder.Options);
+                            // Suspicious: TCP RST
+                            if ((tcpPacket.Flags & TCP_FLAG_RST) != 0)
+                            {
+                                SaveDetection(ipPacket, tcpPacket, "TCP RST Detected", "Medium", optionsBuilder.Options);
+                            }
+                            // Suspicious: Telnet traffic
+                            if (tcpPacket.DestinationPort == 23 || tcpPacket.SourcePort == 23)
+                            {
+                                SaveDetection(ipPacket, tcpPacket, "Telnet Traffic Detected", "High", optionsBuilder.Options);
+                            }
+                            // Suspicious: SYN scan (SYN without ACK)
+                            if ((tcpPacket.Flags & TCP_FLAG_SYN) != 0 && (tcpPacket.Flags & TCP_FLAG_ACK) == 0)
+                            {
+                                SaveDetection(ipPacket, tcpPacket, "Possible SYN Scan", "High", optionsBuilder.Options);
+                            }
+                            // HTTP/HTTPS Traffic
+                            if (tcpPacket.DestinationPort == 80 || tcpPacket.SourcePort == 80)
+                            {
+                                SaveDetection(ipPacket, tcpPacket, "HTTP Traffic", "Low", optionsBuilder.Options);
+                            }
+                            if (tcpPacket.DestinationPort == 443 || tcpPacket.SourcePort == 443)
+                            {
+                                SaveDetection(ipPacket, tcpPacket, "HTTPS Traffic", "Low", optionsBuilder.Options);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("Error processing packet: " + ex.Message);
-                }
-            };
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Error processing packet: " + ex.Message);
+                    }
+                };
 
-            device.Open(); // Promiscuous mode by default
-            Console.WriteLine("Capturing on " + device.Description + " (press Ctrl+C to stop)");
-            device.StartCapture();
-            Console.CancelKeyPress += (s, e) =>
-            {
-                device.StopCapture();
-                device.Close();
-                Console.WriteLine("Capture stopped.");
-            };
-            // Keep the app running
-            while (true) { System.Threading.Thread.Sleep(1000); }
+                device.Open(); // Promiscuous mode by default
+                Console.WriteLine("Capturing on " + device.Description + " (press Ctrl+C to stop)");
+                device.StartCapture();
+                ConsoleCancelEventHandler cancelHandler = (s, e) =>
+                {
+                    device.StopCapture();
+                    device.Close();
+                    captureStopped = true;
+                    Console.WriteLine("Capture stopped.");
+                    e.Cancel = true; // Prevent app from exiting
+                };
+                Console.CancelKeyPress += cancelHandler;
+
+                // Wait until capture is stopped
+                while (!captureStopped) { System.Threading.Thread.Sleep(500); }
+
+                Console.CancelKeyPress -= cancelHandler;
+                // Prompt to select another device or quit (loop continues)
+            }
         }
 
         static void SaveDetection(IPPacket ip, TcpPacket tcp, string eventType, string severity, DbContextOptions<RouterDetectorContext> options)
