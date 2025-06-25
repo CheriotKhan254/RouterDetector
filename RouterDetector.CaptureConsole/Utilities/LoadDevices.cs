@@ -67,14 +67,23 @@ namespace RouterDetector.CaptureConsole.Utilities
             {
                 Console.WriteLine($"{i}: {devices[i].Description}");
             }
+            // Add Antivirus Program as device #10
+            int antivirusIndex = 10;
+            Console.WriteLine($"{antivirusIndex}: Antivirus Program (virtual device)");
 
             Console.Write("\nEnter device number: ");
-            if (int.TryParse(Console.ReadLine(), out int selectedIndex) &&
-                selectedIndex >= 0 && selectedIndex < devices.Count)
+            if (int.TryParse(Console.ReadLine(), out int selectedIndex))
             {
-                var selectedDevice = devices[selectedIndex];
-
-                return selectedDevice;
+                if (selectedIndex == antivirusIndex)
+                {
+                    Console.WriteLine("You selected the Antivirus Program (virtual device). No real capture will occur.");
+                    return null;
+                }
+                if (selectedIndex >= 0 && selectedIndex < devices.Count)
+                {
+                    var selectedDevice = devices[selectedIndex];
+                    return selectedDevice;
+                }
             }
 
             Console.WriteLine("Invalid selection.");

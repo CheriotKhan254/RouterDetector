@@ -19,15 +19,17 @@ namespace RouterDetector.CaptureConsole.Models
         public string ThreatDescription { get; init; }
         public ThreatSeverity Severity { get; init; }
         public DateTime DetectionTime { get; init; } = DateTime.UtcNow;
+        public string ProtocolName { get; init; }
 
         // Optional constructor for required fields
         public DetectionResult(bool isThreat, NetworkPacket packet,
-                             string description, ThreatSeverity severity)
+                             string description, ThreatSeverity severity, string protocolName)
         {
             IsThreat = isThreat;
             OriginalPacket = packet;
             ThreatDescription = description;
             Severity = severity;
+            ProtocolName = protocolName;
         }
 
         public string GetSummary() =>

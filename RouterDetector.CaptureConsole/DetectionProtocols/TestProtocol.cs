@@ -22,7 +22,8 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                     isThreat: true,
                     packet,
                     $"TEST THREAT: Periodic test ({_packetCounter})",
-                    ThreatSeverity.Low
+                    ThreatSeverity.Low,
+                    ProtocolName
                 );
             }
 

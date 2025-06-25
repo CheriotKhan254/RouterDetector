@@ -31,80 +31,37 @@ namespace RouterDetector.Controllers
 
         public async Task<IActionResult> Dashboard()
         {
-            // Network logs analytics
+            var allDetections = await _context.Detectionlogs.ToListAsync();
             var totalNetworkLogs = await _context.Networklogs.CountAsync();
-            var topSourceIps = await _context.Networklogs
-                .GroupBy(l => l.SrcIp)
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { Ip = g.Key, Count = g.Count() })
-                .Take(5)
-                .ToListAsync();
-            var topProtocols = await _context.Networklogs
-                .GroupBy(l => l.Protocol)
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { Protocol = g.Key, Count = g.Count() })
-                .Take(5)
-                .ToListAsync();
 
-            // Detection logs analytics
-            var totalDetectionLogs = await _context.Detectionlogs.CountAsync();
-            var topDeviceTypes = await _context.Detectionlogs
-                .GroupBy(l => l.DeviceType)
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { DeviceType = g.Key, Count = g.Count() })
-                .Take(5)
-                .ToListAsync();
+            var malwareDetections = allDetections
+                .Where(d => d.EventType != null && (
+                    d.EventType.Contains("Malware detected") ||
+                    d.EventType.Contains("Worm") ||
+                    d.EventType.Contains("Trojan")))
+                .ToList();
 
-            // Detection logs by event type
-            var topEventTypes = await _context.Detectionlogs
-                .GroupBy(l => l.EventType)
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { EventType = g.Key, Count = g.Count() })
-                .Take(5)
-                .ToListAsync();
+            var phishingDetections = allDetections
+                .Where(d => d.EventType != null && d.EventType.Contains("Phishing detected"))
+                .ToList();
+            
+            var suspiciousEmailDetections = allDetections
+                .Where(d => d.EventType != null && d.EventType.Contains("Suspicious email attachment"))
+                .ToList();
 
-            // Network logs by destination IP
-            var topDestIps = await _context.Networklogs
-                .GroupBy(l => l.DstIp)
-                .OrderByDescending(g => g.Count())
-                .Select(g => new { Ip = g.Key, Count = g.Count() })
-                .Take(5)
-                .ToListAsync();
+            var viewModel = new DashboardViewModel
+            {
+                TotalDetectionLogs = allDetections.Count,
+                TotalNetworkLogs = totalNetworkLogs,
+                RecentDetections = allDetections.OrderByDescending(d => d.Timestamp).Take(10).ToList(),
+                DetectionsByType = allDetections.GroupBy(d => d.EventType ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
+                DetectionsBySeverity = allDetections.GroupBy(d => d.Severty ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
+                MalwareDetections = malwareDetections,
+                PhishingDetections = phishingDetections,
+                SuspiciousEmailDetections = suspiciousEmailDetections,
+            };
 
-            // Recent activity
-            var recentNetworkLogs = await _context.Networklogs
-                .OrderByDescending(l => l.LogOccurrence)
-                .Take(10)
-                .ToListAsync();
-            var recentDetectionLogs = await _context.Detectionlogs
-                .OrderByDescending(l => l.Timestamp)
-                .Take(10)
-                .ToListAsync();
-
-            // Fetch all detection logs into a strongly-typed list for in-memory analytics
-            var allDetectionLogs = await _context.Detectionlogs.ToListAsync();
-
-            // Security analytics: malware/threats (in-memory LINQ to avoid dynamic lambda errors)
-            var malwareEvents = allDetectionLogs.Where(l => (l.EventType != null && (l.EventType.Contains("malware") || l.EventType.Contains("virus") || l.EventType.Contains("attack") || l.EventType.Contains("threat"))) || (l.Severty != null && l.Severty == "High")).ToList();
-            var totalMalwareEvents = malwareEvents.Count;
-            var recentMalwareEvents = malwareEvents.OrderByDescending(l => l.Timestamp).Take(10).ToList();
-            var malwareByType = malwareEvents.GroupBy(l => l.EventType ?? "Unknown").Select(g => new { EventType = g.Key, Count = g.Count() }).ToList();
-            var threatsBySeverity = malwareEvents.GroupBy(l => l.Severty ?? "Unknown").Select(g => new { Severty = g.Key, Count = g.Count() }).ToList();
-
-            ViewBag.TotalNetworkLogs = totalNetworkLogs;
-            ViewBag.TopSourceIps = topSourceIps;
-            ViewBag.TopProtocols = topProtocols;
-            ViewBag.TotalDetectionLogs = totalDetectionLogs;
-            ViewBag.TopDeviceTypes = topDeviceTypes;
-            ViewBag.TopEventTypes = topEventTypes;
-            ViewBag.TopDestIps = topDestIps;
-            ViewBag.RecentNetworkLogs = recentNetworkLogs;
-            ViewBag.RecentDetectionLogs = recentDetectionLogs;
-            ViewBag.TotalMalwareEvents = totalMalwareEvents;
-            ViewBag.RecentMalwareEvents = recentMalwareEvents;
-            ViewBag.MalwareByType = malwareByType;
-            ViewBag.ThreatsBySeverity = threatsBySeverity;
-            return View();
+            return View(viewModel);
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
