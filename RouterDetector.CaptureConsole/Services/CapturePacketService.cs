@@ -8,6 +8,7 @@ namespace RouterDetector.CaptureConsole.Services
     {
         private string _gateway = string.Empty;
         private ICaptureDevice? _currentDevice;
+        public string? SelectedDeviceDescription => _currentDevice?.Description;
         public event Action<NetworkPacket>? OnPacketCaptured; // Event for subscribers
 
 

@@ -55,8 +55,9 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                     isThreat: true,
                     packet: packet,
                     description: $"Port scan detected from {sourceIp} ({uniquePorts} unique ports)",
-                    severity: ThreatSeverity.High
-                    );
+                    severity: ThreatSeverity.High,
+                    protocolName: ProtocolName
+                );
             }
 
             CleanupStaleEntries();

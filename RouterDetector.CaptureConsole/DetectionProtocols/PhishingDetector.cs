@@ -1,11 +1,16 @@
 ﻿using RouterDetector.CaptureConsole.Interfaces;
 using RouterDetector.CaptureConsole.Models;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace RouterDetector.CaptureConsole.DetectionProtocols
 {
     public class PhishingDetector : IDetector
     {
         public string ProtocolName => "HTTP Phishing Detector";
+
+        // Regex to find URLs in payload. This is a simplified regex.
+        private static readonly Regex UrlRegex = new Regex(@"(http|https|ftp)://([^\s/$.?#].[^\s]*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public DetectionResult? Analyze(NetworkPacket packet)
         {
@@ -37,16 +42,16 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                 }
             }
 
-            return null;
-        }
+                return null;
+            }
 
         private static bool ContainsCredentialHints(string body)
-        {
+            {
             string[] keys = { "username", "password", "email", "login", "pass" };
             return keys.Any(k => body.Contains(k, StringComparison.OrdinalIgnoreCase));
         }
 
-    }
+            }
 
     public static class HttpPayloadParser
     {
@@ -71,11 +76,11 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
 
                 // Parse headers
                 foreach (var line in headerLines.Skip(1))
-                {
+            {
                     var kv = line.Split(new[] { ':' }, 2);
                     if (kv.Length == 2)
                         headers[kv[0].Trim()] = kv[1].Trim();
-                }
+            }
 
                 // Extract body
                 if (sections.Length > 1)
@@ -86,8 +91,12 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             catch
             {
                 return false;
-            }
-        }
+                }
 
+                // Add more checks here, e.g., for known malicious domains, URL shorteners, etc.
+            }
+
+            return null;
+        }
     }
-}
+} 

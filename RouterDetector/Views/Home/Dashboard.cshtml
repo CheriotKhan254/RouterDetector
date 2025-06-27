@@ -1,378 +1,149 @@
+@model RouterDetector.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var topSourceIps = (ViewBag.TopSourceIps as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var topProtocols = (ViewBag.TopProtocols as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var topDeviceTypes = (ViewBag.TopDeviceTypes as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var topEventTypes = (ViewBag.TopEventTypes as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var topDestIps = (ViewBag.TopDestIps as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var recentNetworkLogs = (ViewBag.RecentNetworkLogs as IEnumerable<RouterDetector.Models.Networklogs>)?.ToList() ?? new List<RouterDetector.Models.Networklogs>();
-    var recentDetectionLogs = (ViewBag.RecentDetectionLogs as IEnumerable<RouterDetector.Models.Detectionlogs>)?.ToList() ?? new List<RouterDetector.Models.Detectionlogs>();
-    var malwareByType = (ViewBag.MalwareByType as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var threatsBySeverity = (ViewBag.ThreatsBySeverity as IEnumerable<dynamic>)?.ToList() ?? new List<dynamic>();
-    var recentMalwareEvents = (ViewBag.RecentMalwareEvents as IEnumerable<RouterDetector.Models.Detectionlogs>)?.ToList() ?? new List<RouterDetector.Models.Detectionlogs>();
-    bool hasNetworkLogs = (ViewBag.TotalNetworkLogs ?? 0) > 0;
-    bool hasDetectionLogs = (ViewBag.TotalDetectionLogs ?? 0) > 0;
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4 mb-4">Network Analytics Dashboard</h1>
+@functions {
+    string GetSeverityBadgeClass(string severity)
+    {
+        return severity?.ToLower() switch
+        {
+            "high" => "bg-danger text-white",
+            "medium" => "bg-warning text-dark",
+            "low" => "bg-success text-white",
+            "critical" => "bg-dark text-white",
+            _ => "bg-secondary text-white"
+        };
+    }
+}
 
-    <!-- Stats Cards Row -->
-    <div class="row g-3 mb-4">
+<div class="container-fluid">
+    <h1 class="mt-4">Security Dashboard</h1>
+    <p>Real-time threat monitoring and network analysis.</p>
+
+    <!-- Stats Cards -->
+    <div class="row">
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white h-100">
+            <div class="card bg-primary text-white mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">Total Network Logs</div>
-                            <div class="display-6">@ViewBag.TotalNetworkLogs</div>
-                        </div>
-                        <i class="fas fa-network-wired fa-2x opacity-50"></i>
-                    </div>
+                    <h4>@Model.TotalDetectionLogs</h4>
+                    <p>Total Threats Detected</p>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-success text-white h-100">
+            <div class="card bg-secondary text-white mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">Detection Logs</div>
-                            <div class="display-6">@ViewBag.TotalDetectionLogs</div>
-                        </div>
-                        <i class="fas fa-shield-virus fa-2x opacity-50"></i>
-                    </div>
+                    <h4>@Model.TotalNetworkLogs</h4>
+                    <p>Total Packets Logged</p>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-white h-100">
+            <div class="card bg-danger text-white mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">Security Events</div>
-                            <div class="display-6">@ViewBag.TotalMalwareEvents</div>
-                        </div>
-                        <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
-                    </div>
+                    <h4>@Model.MalwareDetections.Count</h4>
+                    <p>Malware/Virus Events</p>
                 </div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
-            <div class="card bg-info text-white h-100">
+            <div class="card bg-warning text-dark mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small text-white-50">Last 24h Activity</div>
-                            <div class="display-6" id="logsLast24h">...</div>
-                        </div>
-                        <i class="fas fa-clock fa-2x opacity-50"></i>
-                    </div>
+                    <h4>@(Model.PhishingDetections.Count + Model.SuspiciousEmailDetections.Count)</h4>
+                    <p>Phishing & Suspicious Mails</p>
                 </div>
             </div>
         </div>
     </div>
 
-    @if (!hasNetworkLogs && !hasDetectionLogs)
-    {
-        <div class="alert alert-info">
-            <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>No Data Available</h4>
-            <p class="mb-0">Start the capture console to begin collecting network and security data.</p>
-        </div>
-    }
-    else
-    {
-        <!-- Charts Row 1 -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-8">
-                <div class="card h-100">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Network Traffic Overview</h5>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-secondary active" onclick="updateTimeRange('24h')">24h</button>
-                            <button class="btn btn-outline-secondary" onclick="updateTimeRange('7d')">7d</button>
-                            <button class="btn btn-outline-secondary" onclick="updateTimeRange('30d')">30d</button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="trafficOverview" height="300"></canvas>
-                    </div>
+    <!-- Threat Details -->
+    <div class="row">
+        <!-- Malware Detections -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-bug me-1"></i>
+                    Malware, Worms, and Trojans Detected
                 </div>
-            </div>
-            <div class="col-xl-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Protocol Distribution</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="protocolChart" height="260"></canvas>
-                    </div>
+                <div class="card-body">
+                    @if (Model.MalwareDetections.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var item in Model.MalwareDetections)
+                            {
+                                <li class="list-group-item"><strong>@item.EventType</strong> from @item.SourceIP <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-center">No malware detected.</p>
+                    }
                 </div>
             </div>
         </div>
 
-        <!-- Charts Row 2 -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-6">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Top Source IPs</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="sourceIpsChart" height="200"></canvas>
-                    </div>
+        <!-- Phishing & Email Detections -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-envelope-open-text me-1"></i>
+                    Phishing and Suspicious Email Detections
                 </div>
-            </div>
-            <div class="col-xl-6">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Security Events by Type</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="securityEventsChart" height="200"></canvas>
-                    </div>
+                <div class="card-body">
+                    @if (Model.PhishingDetections.Any() || Model.SuspiciousEmailDetections.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var item in Model.PhishingDetections)
+                            {
+                                <li class="list-group-item"><strong>Phishing:</strong> @item.EventType <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                            }
+                            @foreach (var item in Model.SuspiciousEmailDetections)
+                            {
+                                <li class="list-group-item"><strong>Suspicious Email:</strong> @item.Notes <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-center">No phishing or suspicious emails detected.</p>
+                    }
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Recent Activity Table -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#networkLogs">Network Logs</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#securityEvents">Security Events</a>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body">
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="networkLogs">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Time</th>
-                                        <th>Source IP</th>
-                                        <th>Destination IP</th>
-                                        <th>Protocol</th>
-                                        <th>Message</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var log in recentNetworkLogs.Take(5))
-                                    {
-                                        <tr>
-                                            <td>@log.LogOccurrence?.ToString("HH:mm:ss")</td>
-                                            <td>@log.SrcIp</td>
-                                            <td>@log.DstIp</td>
-                                            <td>@log.Protocol</td>
-                                            <td>@log.Message</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="securityEvents">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Time</th>
-                                        <th>Source IP</th>
-                                        <th>Event Type</th>
-                                        <th>Severity</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var log in recentMalwareEvents.Take(5))
-                                    {
-                                        <tr>
-                                            <td>@log.Timestamp.ToString("HH:mm:ss")</td>
-                                            <td>@log.SourceIP</td>
-                                            <td>@log.EventType</td>
-                                            <td>
-                                                <span class="badge bg-@(log.Severty == "High" ? "danger" : 
-                                                                       log.Severty == "Medium" ? "warning" : "info")">
-                                                    @log.Severty
-                                                </span>
-                                            </td>
-                                            <td>@log.ActionTaken</td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <!-- Recent Detections -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-history me-1"></i>
+            Recent Threat Activity
         </div>
-    }
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Event Type</th>
+                        <th>Source IP</th>
+                        <th>Severity</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.RecentDetections)
+                    {
+                        <tr>
+                            <td>@item.Timestamp.ToString("g")</td>
+                            <td>@item.EventType</td>
+                            <td>@item.SourceIP</td>
+                            <td><span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></td>
+                            <td>@item.Notes</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment"></script>
-    <script>
-        // Chart.js Global Configuration
-        Chart.defaults.font.family = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
-        Chart.defaults.font.size = 12;
-        Chart.defaults.plugins.legend.position = 'bottom';
-
-        // Color Schemes
-        const colors = {
-            primary: 'rgba(13, 110, 253, 0.7)',
-            success: 'rgba(25, 135, 84, 0.7)',
-            warning: 'rgba(255, 193, 7, 0.7)',
-            danger: 'rgba(220, 53, 69, 0.7)',
-            info: 'rgba(13, 202, 240, 0.7)'
-        };
-
-        // Protocol Distribution Chart
-        const protocolChart = new Chart(document.getElementById('protocolChart'), {
-            type: 'doughnut',
-            data: {
-                labels: [@Html.Raw(string.Join(",", topProtocols.Select(p => $"'{p.Protocol ?? "Unknown"}'")))],
-                datasets: [{
-                    data: [@string.Join(",", topProtocols.Select(p => p.Count))],
-                    backgroundColor: Object.values(colors)
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 20
-                        }
-                    }
-                }
-            }
-        });
-
-        // Traffic Overview Chart
-        const trafficData = @Json.Serialize(recentNetworkLogs
-            .GroupBy(l => l.LogOccurrence?.ToString("HH:00"))
-            .Select(g => new { Hour = g.Key, Count = g.Count() })
-            .OrderBy(x => x.Hour));
-
-        const trafficChart = new Chart(document.getElementById('trafficOverview'), {
-            type: 'line',
-            data: {
-                labels: trafficData.map(d => d.Hour),
-                datasets: [{
-                    label: 'Traffic Volume',
-                    data: trafficData.map(d => d.Count),
-                    borderColor: colors.primary,
-                    backgroundColor: colors.primary,
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Source IPs Chart
-        const sourceIpsChart = new Chart(document.getElementById('sourceIpsChart'), {
-            type: 'bar',
-            data: {
-                labels: [@Html.Raw(string.Join(",", topSourceIps.Select(ip => $"'{ip.Ip}'")))],
-                datasets: [{
-                    label: 'Connections',
-                    data: [@string.Join(",", topSourceIps.Select(ip => ip.Count))],
-                    backgroundColor: colors.info
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Security Events Chart
-        const securityChart = new Chart(document.getElementById('securityEventsChart'), {
-            type: 'bar',
-            data: {
-                labels: [@Html.Raw(string.Join(",", malwareByType.Select(m => $"'{m.EventType}'")))],
-                datasets: [{
-                    label: 'Events',
-                    data: [@string.Join(",", malwareByType.Select(m => m.Count))],
-                    backgroundColor: colors.danger
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Update time range for traffic overview
-        function updateTimeRange(range) {
-            // This would typically fetch new data from the server
-            // For now, just update the button states
-            document.querySelectorAll('.btn-group .btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-        }
-
-        // Update real-time counters
-        setInterval(() => {
-            fetch('/api/TrafficLogs/network')
-                .then(res => res.json())
-                .then(data => {
-                    const now = new Date();
-                    const last24h = data.filter(l => l.logOccurrence && 
-                        (now - new Date(l.logOccurrence)) < 24*60*60*1000);
-                    document.getElementById('logsLast24h').textContent = last24h.length;
-                });
-        }, 30000);
-    </script>
-}
