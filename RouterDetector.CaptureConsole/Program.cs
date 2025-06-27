@@ -1,11 +1,8 @@
 ﻿using RouterDetector.CaptureConsole.DetectionProtocols;
 using RouterDetector.CaptureConsole.Models;
 using RouterDetector.CaptureConsole.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
-using System.Globalization;
+using RouterDetector.Models;
 
 namespace RouterDetector.CaptureConsole
 {
@@ -15,37 +12,20 @@ namespace RouterDetector.CaptureConsole
 
         static void Main(string[] args)
         {
-            // Set up configuration
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            // Set up dependency injection
-            var serviceProvider = new ServiceCollection()
-                .AddDbContext<RouterDetectorContext>(options =>
-                    options.UseSqlServer(configuration.GetConnectionString("Default-Connection")))
-                .BuildServiceProvider();
-
-
             CapturePacketsService captureService = new();
             DetectionEngine engine = new();
+            DatabaseService database = new();
 
             // Subscribe to packet events
-            captureService.OnPacketCaptured += (packet) =>
+            captureService.OnPacketCaptured += async (packet) =>
             {
                 try
                 {
-                    Console.WriteLine($"[{packet.Timestamp:HH:mm:ss}] {packet.SourceIp} → {packet.DestinationIp}");
-
+                    // Perform analysis
                     var threat = engine.AnalyzePacket(packet);
                     if (threat != null)
                     {
-                        using (var scope = serviceProvider.CreateScope())
-                        {
-                            var dbContext = scope.ServiceProvider.GetRequiredService<RouterDetectorContext>();
-                            LogThreat(threat, dbContext, captureService.SelectedDeviceDescription);
-                        }
+                        await LogThreatAsync(threat, "Unknown Device", database); // Use async method
                     }
                 }
                 catch (Exception ex)
@@ -57,7 +37,6 @@ namespace RouterDetector.CaptureConsole
             try
             {
                 captureService.StartService();
-
                 Console.WriteLine("Press Enter to exit");
                 Console.ReadKey();
             }
@@ -67,7 +46,7 @@ namespace RouterDetector.CaptureConsole
             }
         }
 
-        private static void LogThreat(DetectionResult threat, RouterDetectorContext dbContext, string? deviceDescription)
+        private static async Task LogThreatAsync(DetectionResult threat, string? deviceDescription, DatabaseService database)
         {
             var eatTime = TimeZoneInfo.ConvertTimeFromUtc(threat.DetectionTime.ToUniversalTime(), EatZone);
             var color = threat.Severity switch
@@ -87,7 +66,7 @@ namespace RouterDetector.CaptureConsole
             Console.WriteLine($"Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}");
 
             // Save threat and packet details to EventLog
-            var eventLog = new EventLog
+            var eventLog = new RouterDetector.Models.EventLog
             {
                 Timestamp = eatTime,
                 Institution = null, // Set if available
@@ -116,8 +95,7 @@ namespace RouterDetector.CaptureConsole
                 UserAccount = null,
                 ActionTaken2 = null
             };
-            dbContext.EventLogs.Add(eventLog);
-            dbContext.SaveChanges();
+            await database.LogEvent(eventLog);
             Console.WriteLine("Threat and packet details saved to database.");
         }
     }

@@ -23,4 +23,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RouterDetector\RouterDetector.csproj" />
+  </ItemGroup>
+
 </Project>

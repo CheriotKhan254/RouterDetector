@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using RouterDetector.CaptureConsole.Models;
+using RouterDetector.Models;
 
 namespace RouterDetector.Data
 {

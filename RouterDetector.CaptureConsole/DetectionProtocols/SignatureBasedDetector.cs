@@ -33,7 +33,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             string payloadString;
             try
             {
-                payloadString = Encoding.UTF8.GetString(packet.Payload.Where(b => b.HasValue).Select(b => b.Value).ToArray());
+                payloadString = Encoding.UTF8.GetString(packet.Payload);
             }
             catch (ArgumentException)
             {

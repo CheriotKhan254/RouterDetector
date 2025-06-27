@@ -48,8 +48,10 @@ namespace RouterDetector.Controllers
                 .Where(e => e.EventType != null && e.EventType.Contains("Suspicious email attachment"))
                 .ToList();
 
+
             var viewModel = new DashboardViewModel
             {
+
                 TotalEventLogs = allEvents.Count,
                 RecentEvents = allEvents.OrderByDescending(e => e.Timestamp).Take(10).ToList(),
                 EventsByType = allEvents.GroupBy(e => e.EventType ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),

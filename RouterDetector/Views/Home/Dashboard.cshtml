@@ -46,6 +46,50 @@
         </div>
     </div>
 
+    <!-- New Threat Stats Cards -->
+    <div class="row">
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.BruteForceDetections.Count</h4>
+                    <p>Brute Force Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.DdosDetections.Count</h4>
+                    <p>DDoS Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-dark text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.SystemAttackDetections.Count</h4>
+                    <p>System Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.MobileAppAttackDetections.Count</h4>
+                    <p>Mobile App Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.WebAppAttackDetections.Count</h4>
+                    <p>Web App Attacks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Threat Details -->
     <div class="row g-3 mb-4">
         <!-- Malware Events -->
@@ -76,8 +120,13 @@
             </div>
         </div>
 
+        <!-- Brute Force, DDoS, System, Mobile, Web App Detections -->
         <!-- Phishing & Email Events -->
         <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Other Threats Detected
             <div class="card h-100 shadow-sm">
                 <div class="card-header bg-warning text-dark">
                     <i class="fas fa-envelope-open-text me-1"></i>
