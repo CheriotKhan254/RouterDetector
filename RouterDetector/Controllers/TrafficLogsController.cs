@@ -21,10 +21,11 @@ namespace RouterDetector.Controllers
 
         // GET: api/TrafficLogs/network
         [HttpGet("network")]
-        public async Task<ActionResult<IEnumerable<Networklogs>>> GetNetworkLogs()
+        public async Task<ActionResult<IEnumerable<EventLog>>> GetNetworkLogs()
         {
-            var logs = await _context.Networklogs
-                .OrderByDescending(n => n.LogOccurrence)
+            // Optionally filter by event type or other criteria if needed
+            var logs = await _context.EventLogs
+                .OrderByDescending(n => n.Timestamp)
                 .Take(1000)
                 .ToListAsync();
             return Ok(logs);
@@ -32,10 +33,11 @@ namespace RouterDetector.Controllers
 
         // GET: api/TrafficLogs/detections
         [HttpGet("detections")]
-        public async Task<ActionResult<IEnumerable<Detectionlogs>>> GetDetectionLogs()
+        public async Task<ActionResult<IEnumerable<EventLog>>> GetDetectionLogs()
         {
-            var logs = await _context.Detectionlogs
-                .OrderByDescending(d => d.Timestamp)
+            // Optionally filter by event type or other criteria if needed
+            var logs = await _context.EventLogs
+                .OrderByDescending(e => e.Timestamp)
                 .Take(1000)
                 .ToListAsync();
             return Ok(logs);

@@ -1,0 +1,188 @@
+@model RouterDetector.Controllers.EventLogsViewModel
+
+@{
+    ViewData["Title"] = "Event Logs";
+    string GetSeverityBadgeClass(string severity)
+    {
+        return severity?.ToLower() switch
+        {
+            "high" => "badge bg-danger",
+            "medium" => "badge bg-warning text-dark",
+            "low" => "badge bg-success",
+            "critical" => "badge bg-dark",
+            _ => "badge bg-secondary"
+        };
+    }
+}
+
+<h1>Event Logs</h1>
+
+<!-- Filter Form -->
+<form method="get" class="mb-4">
+    <div class="row g-2">
+        <div class="col-md-3">
+            <input type="text" name="filterIpAddress" value="@Model.FilterIpAddress" 
+                   class="form-control" placeholder="IP Address">
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="filterProtocol" value="@Model.FilterProtocol" class="form-control" placeholder="Protocol">
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="filterStartDate" value="@Model.FilterStartDate?.ToString("yyyy-MM-dd")" 
+                   class="form-control" placeholder="Start Date">
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="filterEndDate" value="@Model.FilterEndDate?.ToString("yyyy-MM-dd")" 
+                   class="form-control" placeholder="End Date">
+        </div>
+        <div class="col-md-2">
+            <select name="pageSize" class="form-control" onchange="this.form.submit()">
+                <option value="10" selected="@(Model.PageSize == 10)">10 per page</option>
+                <option value="50" selected="@(Model.PageSize == 50)">50 per page</option>
+                <option value="100" selected="@(Model.PageSize == 100)">100 per page</option>
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+    </div>
+</form>
+
+<!-- Responsive Table Wrapper -->
+<div class="table-responsive" style="max-width: 100vw;">
+    <table class="table table-hover table-bordered align-middle" style="min-width: 1800px;">
+        <thead class="table-light sticky-top" style="z-index: 1;">
+            <tr>
+                <th>Id</th>
+                <th>Timestamp</th>
+                <th>Institution</th>
+                <th>Device Name</th>
+                <th>Device Type</th>
+                <th>Log Source</th>
+                <th>Event Type</th>
+                <th>Severity</th>
+                <th>Username</th>
+                <th>Src IP</th>
+                <th>Dst IP</th>
+                <th>Src Port</th>
+                <th>Dst Port</th>
+                <th>Protocol</th>
+                <th>Action Taken</th>
+                <th>Nat Src IP</th>
+                <th>Nat Dst IP</th>
+                <th>Hostname</th>
+                <th>Notes</th>
+                <th>Rule Type</th>
+                <th>Live PCAP</th>
+                <th>Message</th>
+                <th>Log Occurrence</th>
+                <th>Event Type 2</th>
+                <th>Severity 2</th>
+                <th>User Account</th>
+                <th>Action Taken 2</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Logs.Any())
+            {
+                <tr>
+                    <td colspan="28" class="text-center text-muted">No records found.</td>
+                </tr>
+            }
+            else
+            {
+                foreach (var log in Model.Logs)
+                {
+                    <tr>
+                        <td>@log.Id</td>
+                        <td>@log.Timestamp.ToString("g")</td>
+                        <td>@log.Institution</td>
+                        <td>@log.DeviceName</td>
+                        <td>@log.DeviceType</td>
+                        <td>@log.LogSource</td>
+                        <td><span class="badge bg-info">@log.EventType</span></td>
+                        <td><span class="@GetSeverityBadgeClass(log.Severity)">@log.Severity</span></td>
+                        <td>@log.Username</td>
+                        <td>@log.SrcIp</td>
+                        <td>@log.DstIp</td>
+                        <td>@log.SrcPort</td>
+                        <td>@log.DstPort</td>
+                        <td>@log.Protocol</td>
+                        <td>@log.ActionTaken</td>
+                        <td>@log.NatSrcIp</td>
+                        <td>@log.NatDstIp</td>
+                        <td>@log.Hostname</td>
+                        <td>@log.Notes</td>
+                        <td>@log.RuleType</td>
+                        <td>@log.LivePcap</td>
+                        <td>@log.Message</td>
+                        <td>@log.LogOccurrence</td>
+                        <td>@log.EventType2</td>
+                        <td>@log.Severity2</td>
+                        <td>@log.UserAccount</td>
+                        <td>@log.ActionTaken2</td>
+                        <td><a asp-action="Details" asp-route-id="@log.Id" class="btn btn-sm btn-outline-info">Details</a></td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        @if (Model.PageNumber > 1)
+        {
+            <li class="page-item">
+                <a class="page-link" 
+                   href="@Url.Action("Index", new { 
+                       pageNumber = Model.PageNumber - 1, 
+                       pageSize = Model.PageSize,
+                       filterIpAddress = Model.FilterIpAddress,
+                       filterProtocol = Model.FilterProtocol,
+                       filterStartDate = Model.FilterStartDate,
+                       filterEndDate = Model.FilterEndDate
+                   })">Previous</a>
+            </li>
+        }
+
+        @for (int i = 1; i <= (int)Math.Ceiling((double)Model.TotalRecords / Model.PageSize); i++)
+        {
+            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                <a class="page-link" 
+                   href="@Url.Action("Index", new { 
+                       pageNumber = i, 
+                       pageSize = Model.PageSize,
+                       filterIpAddress = Model.FilterIpAddress,
+                       filterProtocol = Model.FilterProtocol,
+                       filterStartDate = Model.FilterStartDate,
+                       filterEndDate = Model.FilterEndDate
+                   })">@i</a>
+            </li>
+        }
+
+        @if (Model.PageNumber < (int)Math.Ceiling((double)Model.TotalRecords / Model.PageSize))
+        {
+            <li class="page-item">
+                <a class="page-link" 
+                   href="@Url.Action("Index", new { 
+                       pageNumber = Model.PageNumber + 1, 
+                       pageSize = Model.PageSize,
+                       filterIpAddress = Model.FilterIpAddress,
+                       filterProtocol = Model.FilterProtocol,
+                       filterStartDate = Model.FilterStartDate,
+                       filterEndDate = Model.FilterEndDate
+                   })">Next</a>
+            </li>
+        }
+    </ul>
+</nav>
+
+<!-- Summary -->
+<div class="text-muted">
+    Showing @((Model.PageNumber - 1) * Model.PageSize + 1) to 
+    @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalRecords) of 
+    @Model.TotalRecords records
+</div> 

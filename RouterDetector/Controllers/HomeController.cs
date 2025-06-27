@@ -31,34 +31,32 @@ namespace RouterDetector.Controllers
 
         public async Task<IActionResult> Dashboard()
         {
-            var allDetections = await _context.Detectionlogs.ToListAsync();
-            var totalNetworkLogs = await _context.Networklogs.CountAsync();
+            var allEvents = await _context.EventLogs.ToListAsync();
 
-            var malwareDetections = allDetections
-                .Where(d => d.EventType != null && (
-                    d.EventType.Contains("Malware detected") ||
-                    d.EventType.Contains("Worm") ||
-                    d.EventType.Contains("Trojan")))
+            var malwareEvents = allEvents
+                .Where(e => e.EventType != null && (
+                    e.EventType.Contains("Malware detected") ||
+                    e.EventType.Contains("Worm") ||
+                    e.EventType.Contains("Trojan")))
                 .ToList();
 
-            var phishingDetections = allDetections
-                .Where(d => d.EventType != null && d.EventType.Contains("Phishing detected"))
+            var phishingEvents = allEvents
+                .Where(e => e.EventType != null && e.EventType.Contains("Phishing detected"))
                 .ToList();
             
-            var suspiciousEmailDetections = allDetections
-                .Where(d => d.EventType != null && d.EventType.Contains("Suspicious email attachment"))
+            var suspiciousEmailEvents = allEvents
+                .Where(e => e.EventType != null && e.EventType.Contains("Suspicious email attachment"))
                 .ToList();
 
             var viewModel = new DashboardViewModel
             {
-                TotalDetectionLogs = allDetections.Count,
-                TotalNetworkLogs = totalNetworkLogs,
-                RecentDetections = allDetections.OrderByDescending(d => d.Timestamp).Take(10).ToList(),
-                DetectionsByType = allDetections.GroupBy(d => d.EventType ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
-                DetectionsBySeverity = allDetections.GroupBy(d => d.Severty ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
-                MalwareDetections = malwareDetections,
-                PhishingDetections = phishingDetections,
-                SuspiciousEmailDetections = suspiciousEmailDetections,
+                TotalEventLogs = allEvents.Count,
+                RecentEvents = allEvents.OrderByDescending(e => e.Timestamp).Take(10).ToList(),
+                EventsByType = allEvents.GroupBy(e => e.EventType ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
+                EventsBySeverity = allEvents.GroupBy(e => e.Severity ?? "Unknown").ToDictionary(g => g.Key, g => g.Count()),
+                MalwareEvents = malwareEvents,
+                PhishingEvents = phishingEvents,
+                SuspiciousEmailEvents = suspiciousEmailEvents,
             };
 
             return View(viewModel);

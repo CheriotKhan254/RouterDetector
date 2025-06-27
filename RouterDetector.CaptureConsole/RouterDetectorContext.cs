@@ -10,8 +10,9 @@ namespace RouterDetector.Data
         {
         }
 
-        public DbSet<Detectionlogs> Detectionlogs { get; set; } = default!;
-        public DbSet<Networklogs> Networklogs { get; set; } = default!;
+        // Removed: public DbSet<Detectionlogs> Detectionlogs { get; set; } = default!;
+        // Removed: public DbSet<Networklogs> Networklogs { get; set; } = default!;
+        public DbSet<EventLog> EventLogs { get; set; } = default!;
         // User model not needed in console
     }
 }

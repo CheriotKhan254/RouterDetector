@@ -14,8 +14,7 @@ namespace RouterDetector.Data
         {
         }
 
-        public DbSet<RouterDetector.Models.Detectionlogs> Detectionlogs { get; set; } = default!;
-        public DbSet<RouterDetector.Models.Networklogs> Networklogs { get; set; } = default!;
         public DbSet<RouterDetector.Models.User> Users { get; set; } = default!;
+        public DbSet<RouterDetector.Models.EventLog> EventLogs { get; set; } = default!;
     }
 }

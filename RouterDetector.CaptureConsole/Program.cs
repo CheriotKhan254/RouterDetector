@@ -86,35 +86,37 @@ namespace RouterDetector.CaptureConsole
             Console.WriteLine($"Source: {threat.OriginalPacket.SourceIp}");
             Console.WriteLine($"Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}");
 
-            // Save threat to Detectionlogs
-            var detectionLog = new Detectionlogs
+            // Save threat and packet details to EventLog
+            var eventLog = new EventLog
             {
                 Timestamp = eatTime,
-                SourceIP = threat.OriginalPacket.SourceIp?.ToString(),
+                Institution = null, // Set if available
+                DeviceName = deviceDescription,
                 DeviceType = deviceDescription,
                 LogSource = threat.ProtocolName,
                 EventType = threat.ThreatDescription,
-                Severty = threat.Severity.ToString(),
-                ActionTaken = "Logged",
-                Notes = $"Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}"
-            };
-            dbContext.Detectionlogs.Add(detectionLog);
-
-            // Save packet details to Networklogs
-            var networkLog = new Networklogs
-            {
+                Severity = threat.Severity.ToString(),
+                Username = null, // Set if available
                 SrcIp = threat.OriginalPacket.SourceIp?.ToString(),
                 DstIp = threat.OriginalPacket.DestinationIp?.ToString(),
                 SrcPort = threat.OriginalPacket.SourcePort,
                 DstPort = threat.OriginalPacket.DestinationPort,
                 Protocol = threat.OriginalPacket.TransportProtocol.ToString(),
+                ActionTaken = "Logged",
+                NatSrcIp = null, // Set if available
+                NatDstIp = null, // Set if available
+                Hostname = null, // Set if available
+                Notes = $"Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}",
                 RuleType = threat.ProtocolName,
-                LivePcap = true,
-                LogOccurrence = eatTime,
-                Message = threat.ThreatDescription, 
+                LivePcap = "true",
+                Message = threat.ThreatDescription,
+                LogOccurrence = eatTime.ToString("o"),
+                EventType2 = null,
+                Severity2 = null,
+                UserAccount = null,
+                ActionTaken2 = null
             };
-            dbContext.Networklogs.Add(networkLog);
-
+            dbContext.EventLogs.Add(eventLog);
             dbContext.SaveChanges();
             Console.WriteLine("Threat and packet details saved to database.");
         }

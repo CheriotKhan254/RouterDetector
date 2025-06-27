@@ -1,4 +1,3 @@
-using RouterDetector.Models;
 using System.Collections.Generic;
 
 namespace RouterDetector.Models
@@ -6,17 +5,16 @@ namespace RouterDetector.Models
     public class DashboardViewModel
     {
         // General Stats
-        public int TotalDetectionLogs { get; set; }
-        public int TotalNetworkLogs { get; set; }
+        public int TotalEventLogs { get; set; }
 
         // Threat Analytics
-        public List<Detectionlogs> RecentDetections { get; set; } = new();
-        public Dictionary<string, int> DetectionsByType { get; set; } = new();
-        public Dictionary<string, int> DetectionsBySeverity { get; set; } = new();
+        public List<EventLog> RecentEvents { get; set; } = new();
+        public Dictionary<string, int> EventsByType { get; set; } = new();
+        public Dictionary<string, int> EventsBySeverity { get; set; } = new();
 
         // Specific Threat Lists
-        public List<Detectionlogs> MalwareDetections { get; set; } = new();
-        public List<Detectionlogs> PhishingDetections { get; set; } = new();
-        public List<Detectionlogs> SuspiciousEmailDetections { get; set; } = new();
+        public List<EventLog> MalwareEvents { get; set; } = new();
+        public List<EventLog> PhishingEvents { get; set; } = new();
+        public List<EventLog> SuspiciousEmailEvents { get; set; } = new();
     }
 } 

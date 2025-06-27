@@ -1,0 +1,69 @@
+@model RouterDetector.Models.EventLog
+
+@{
+    ViewData["Title"] = "Event Log Details";
+}
+
+<h1>Event Log Details</h1>
+
+<div>
+    <h4>EventLog</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">Timestamp</dt>
+        <dd class = "col-sm-10">@Model.Timestamp</dd>
+        <dt class = "col-sm-2">Institution</dt>
+        <dd class = "col-sm-10">@Model.Institution</dd>
+        <dt class = "col-sm-2">Device Name</dt>
+        <dd class = "col-sm-10">@Model.DeviceName</dd>
+        <dt class = "col-sm-2">Device Type</dt>
+        <dd class = "col-sm-10">@Model.DeviceType</dd>
+        <dt class = "col-sm-2">Log Source</dt>
+        <dd class = "col-sm-10">@Model.LogSource</dd>
+        <dt class = "col-sm-2">Event Type</dt>
+        <dd class = "col-sm-10">@Model.EventType</dd>
+        <dt class = "col-sm-2">Severity</dt>
+        <dd class = "col-sm-10">@Model.Severity</dd>
+        <dt class = "col-sm-2">Username</dt>
+        <dd class = "col-sm-10">@Model.Username</dd>
+        <dt class = "col-sm-2">Src IP</dt>
+        <dd class = "col-sm-10">@Model.SrcIp</dd>
+        <dt class = "col-sm-2">Dst IP</dt>
+        <dd class = "col-sm-10">@Model.DstIp</dd>
+        <dt class = "col-sm-2">Src Port</dt>
+        <dd class = "col-sm-10">@Model.SrcPort</dd>
+        <dt class = "col-sm-2">Dst Port</dt>
+        <dd class = "col-sm-10">@Model.DstPort</dd>
+        <dt class = "col-sm-2">Protocol</dt>
+        <dd class = "col-sm-10">@Model.Protocol</dd>
+        <dt class = "col-sm-2">Action Taken</dt>
+        <dd class = "col-sm-10">@Model.ActionTaken</dd>
+        <dt class = "col-sm-2">Nat Src IP</dt>
+        <dd class = "col-sm-10">@Model.NatSrcIp</dd>
+        <dt class = "col-sm-2">Nat Dst IP</dt>
+        <dd class = "col-sm-10">@Model.NatDstIp</dd>
+        <dt class = "col-sm-2">Hostname</dt>
+        <dd class = "col-sm-10">@Model.Hostname</dd>
+        <dt class = "col-sm-2">Notes</dt>
+        <dd class = "col-sm-10">@Model.Notes</dd>
+        <dt class = "col-sm-2">Rule Type</dt>
+        <dd class = "col-sm-10">@Model.RuleType</dd>
+        <dt class = "col-sm-2">Live PCAP</dt>
+        <dd class = "col-sm-10">@Model.LivePcap</dd>
+        <dt class = "col-sm-2">Message</dt>
+        <dd class = "col-sm-10">@Model.Message</dd>
+        <dt class = "col-sm-2">Log Occurrence</dt>
+        <dd class = "col-sm-10">@Model.LogOccurrence</dd>
+        <dt class = "col-sm-2">Event Type 2</dt>
+        <dd class = "col-sm-10">@Model.EventType2</dd>
+        <dt class = "col-sm-2">Severity 2</dt>
+        <dd class = "col-sm-10">@Model.Severity2</dd>
+        <dt class = "col-sm-2">User Account</dt>
+        <dd class = "col-sm-10">@Model.UserAccount</dd>
+        <dt class = "col-sm-2">Action Taken 2</dt>
+        <dd class = "col-sm-10">@Model.ActionTaken2</dd>
+    </dl>
+</div>
+<div>
+    <a asp-action="Index">Back to List</a>
+</div> 

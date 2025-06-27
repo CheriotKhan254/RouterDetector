@@ -1,149 +1,149 @@
 @model RouterDetector.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-}
-
-@functions {
     string GetSeverityBadgeClass(string severity)
     {
         return severity?.ToLower() switch
         {
-            "high" => "bg-danger text-white",
-            "medium" => "bg-warning text-dark",
-            "low" => "bg-success text-white",
-            "critical" => "bg-dark text-white",
-            _ => "bg-secondary text-white"
+            "high" => "badge bg-danger",
+            "medium" => "badge bg-warning text-dark",
+            "low" => "badge bg-success",
+            "critical" => "badge bg-dark",
+            _ => "badge bg-secondary"
         };
     }
 }
 
 <div class="container-fluid">
-    <h1 class="mt-4">Security Dashboard</h1>
-    <p>Real-time threat monitoring and network analysis.</p>
+    <h1 class="mt-4 mb-3">Security Dashboard</h1>
+    <p class="mb-4">Real-time threat monitoring and network analysis.</p>
 
     <!-- Stats Cards -->
-    <div class="row">
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-primary text-white mb-4">
+    <div class="row g-3 mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-primary text-white h-100 shadow-sm">
                 <div class="card-body">
-                    <h4>@Model.TotalDetectionLogs</h4>
-                    <p>Total Threats Detected</p>
+                    <h4 class="mb-1">@Model.TotalEventLogs</h4>
+                    <p class="mb-0">Total Events Logged</p>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-secondary text-white mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-danger text-white h-100 shadow-sm">
                 <div class="card-body">
-                    <h4>@Model.TotalNetworkLogs</h4>
-                    <p>Total Packets Logged</p>
+                    <h4 class="mb-1">@Model.MalwareEvents.Count</h4>
+                    <p class="mb-0">Malware/Virus Events</p>
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-danger text-white mb-4">
+        <div class="col-xl-4 col-md-6">
+            <div class="card bg-warning text-dark h-100 shadow-sm">
                 <div class="card-body">
-                    <h4>@Model.MalwareDetections.Count</h4>
-                    <p>Malware/Virus Events</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card bg-warning text-dark mb-4">
-                <div class="card-body">
-                    <h4>@(Model.PhishingDetections.Count + Model.SuspiciousEmailDetections.Count)</h4>
-                    <p>Phishing & Suspicious Mails</p>
+                    <h4 class="mb-1">@(Model.PhishingEvents.Count + Model.SuspiciousEmailEvents.Count)</h4>
+                    <p class="mb-0">Phishing & Suspicious Mails</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Threat Details -->
-    <div class="row">
-        <!-- Malware Detections -->
+    <div class="row g-3 mb-4">
+        <!-- Malware Events -->
         <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-danger text-white">
                     <i class="fas fa-bug me-1"></i>
                     Malware, Worms, and Trojans Detected
                 </div>
                 <div class="card-body">
-                    @if (Model.MalwareDetections.Any())
+                    @if (Model.MalwareEvents.Any())
                     {
-                        <ul class="list-group">
-                            @foreach (var item in Model.MalwareDetections)
+                        <ul class="list-group list-group-flush">
+                            @foreach (var item in Model.MalwareEvents)
                             {
-                                <li class="list-group-item"><strong>@item.EventType</strong> from @item.SourceIP <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>@item.EventType</strong> from <span class="text-primary">@item.SrcIp</span></span>
+                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
+                                </li>
                             }
                         </ul>
                     }
                     else
                     {
-                        <p class="text-center">No malware detected.</p>
+                        <p class="text-center text-muted">No malware detected.</p>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Phishing & Email Detections -->
+        <!-- Phishing & Email Events -->
         <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-warning text-dark">
                     <i class="fas fa-envelope-open-text me-1"></i>
                     Phishing and Suspicious Email Detections
                 </div>
                 <div class="card-body">
-                    @if (Model.PhishingDetections.Any() || Model.SuspiciousEmailDetections.Any())
+                    @if (Model.PhishingEvents.Any() || Model.SuspiciousEmailEvents.Any())
                     {
-                        <ul class="list-group">
-                            @foreach (var item in Model.PhishingDetections)
+                        <ul class="list-group list-group-flush">
+                            @foreach (var item in Model.PhishingEvents)
                             {
-                                <li class="list-group-item"><strong>Phishing:</strong> @item.EventType <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Phishing:</strong> @item.EventType</span>
+                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
+                                </li>
                             }
-                            @foreach (var item in Model.SuspiciousEmailDetections)
+                            @foreach (var item in Model.SuspiciousEmailEvents)
                             {
-                                <li class="list-group-item"><strong>Suspicious Email:</strong> @item.Notes <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><strong>Suspicious Email:</strong> @item.Notes</span>
+                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
+                                </li>
                             }
                         </ul>
                     }
                     else
                     {
-                        <p class="text-center">No phishing or suspicious emails detected.</p>
+                        <p class="text-center text-muted">No phishing or suspicious emails detected.</p>
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Detections -->
-    <div class="card mb-4">
-        <div class="card-header">
+    <!-- Recent Events -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
             <i class="fas fa-history me-1"></i>
-            Recent Threat Activity
+            Recent Event Activity
         </div>
-        <div class="card-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Event Type</th>
-                        <th>Source IP</th>
-                        <th>Severity</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.RecentDetections)
-                    {
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <td>@item.Timestamp.ToString("g")</td>
-                            <td>@item.EventType</td>
-                            <td>@item.SourceIP</td>
-                            <td><span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></td>
-                            <td>@item.Notes</td>
+                            <th>Timestamp</th>
+                            <th>Event Type</th>
+                            <th>Source IP</th>
+                            <th>Severity</th>
+                            <th>Details</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.RecentEvents)
+                        {
+                            <tr>
+                                <td>@item.Timestamp.ToString("g")</td>
+                                <td><span class="badge bg-info">@item.EventType</span></td>
+                                <td>@item.SrcIp</td>
+                                <td><span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span></td>
+                                <td>@item.Notes</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

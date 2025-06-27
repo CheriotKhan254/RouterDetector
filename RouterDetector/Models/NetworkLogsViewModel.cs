@@ -2,7 +2,7 @@
 {
     public class NetworkLogsViewModel
     {
-        public List<Networklogs> Logs { get; set; }
+        public List<EventLog> Logs { get; set; }
         public int PageNumber { get; set; }
         public int PageSize { get; set; }
         public int TotalRecords { get; set; }

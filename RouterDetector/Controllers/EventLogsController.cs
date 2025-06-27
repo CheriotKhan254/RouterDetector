@@ -1,23 +1,24 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
 using RouterDetector.Models;
 using Microsoft.AspNetCore.Authorization;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace RouterDetector.Controllers
 {
     [Authorize]
-    public class NetworklogsController : Controller
+    public class EventLogsController : Controller
     {
         private readonly RouterDetectorContext _context;
 
-        public NetworklogsController(RouterDetectorContext context)
+        public EventLogsController(RouterDetectorContext context)
         {
             _context = context;
         }
 
-
-        // GET: Networklogs
+        // GET: EventLogs
         public async Task<IActionResult> Index(
             string? filterIpAddress,
             string? filterProtocol,
@@ -26,7 +27,7 @@ namespace RouterDetector.Controllers
             int pageNumber = 1,
             int pageSize = 50)
         {
-            var query = _context.Networklogs.AsQueryable();
+            var query = _context.EventLogs.AsQueryable();
 
             // Apply filters
             if (!string.IsNullOrEmpty(filterIpAddress))
@@ -41,12 +42,12 @@ namespace RouterDetector.Controllers
 
             if (filterStartDate.HasValue)
             {
-                query = query.Where(l => l.LogOccurrence >= filterStartDate);
+                query = query.Where(l => l.Timestamp >= filterStartDate);
             }
 
             if (filterEndDate.HasValue)
             {
-                query = query.Where(l => l.LogOccurrence <= filterEndDate);
+                query = query.Where(l => l.Timestamp <= filterEndDate);
             }
 
             // Get total count before pagination
@@ -54,12 +55,13 @@ namespace RouterDetector.Controllers
 
             // Apply pagination
             var logs = await query
-                .OrderByDescending(n => n.LogOccurrence ?? DateTime.MinValue)
+                .OrderByDescending(n => n.Timestamp)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            var model = new NetworkLogsViewModel
+            // Use a simple view model for now
+            var model = new EventLogsViewModel
             {
                 Logs = logs,
                 PageNumber = pageNumber,
@@ -74,17 +76,16 @@ namespace RouterDetector.Controllers
             return View(model);
         }
 
-        // In your NetworklogsController.cs
         [HttpGet]
         public async Task<IActionResult> CheckNewLogs(DateTime lastLogTime)
         {
-            var hasNewLogs = await _context.Networklogs
-                .AnyAsync(l => l.LogOccurrence > lastLogTime);
+            var hasNewLogs = await _context.EventLogs
+                .AnyAsync(l => l.Timestamp > lastLogTime);
 
             return Json(new { hasNewLogs });
         }
 
-        // GET: Networklogs/Details/5
+        // GET: EventLogs/Details/5
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -92,14 +93,27 @@ namespace RouterDetector.Controllers
                 return NotFound();
             }
 
-            var networklogs = await _context.Networklogs
+            var eventLog = await _context.EventLogs
                 .FirstOrDefaultAsync(m => m.Id == id);
-            if (networklogs == null)
+            if (eventLog == null)
             {
                 return NotFound();
             }
 
-            return View(networklogs);
+            return View(eventLog);
         }
     }
-}
+
+    // Simple view model for the index view
+    public class EventLogsViewModel
+    {
+        public List<EventLog> Logs { get; set; }
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalRecords { get; set; }
+        public string FilterIpAddress { get; set; }
+        public string FilterProtocol { get; set; }
+        public DateTime? FilterStartDate { get; set; }
+        public DateTime? FilterEndDate { get; set; }
+    }
+} 
