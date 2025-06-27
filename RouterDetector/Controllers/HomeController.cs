@@ -49,6 +49,26 @@ namespace RouterDetector.Controllers
                 .Where(d => d.EventType != null && d.EventType.Contains("Suspicious email attachment"))
                 .ToList();
 
+            var bruteForceDetections = allDetections
+                .Where(d => d.LogSource != null && d.LogSource.Contains("Brute Force Attack"))
+                .ToList();
+
+            var ddosDetections = allDetections
+                .Where(d => d.LogSource != null && d.LogSource.Contains("DDoS Attack"))
+                .ToList();
+
+            var systemAttackDetections = allDetections
+                .Where(d => d.LogSource != null && d.LogSource.Contains("System Attack"))
+                .ToList();
+
+            var mobileAppAttackDetections = allDetections
+                .Where(d => d.LogSource != null && d.LogSource.Contains("Mobile App Attack"))
+                .ToList();
+
+            var webAppAttackDetections = allDetections
+                .Where(d => d.LogSource != null && d.LogSource.Contains("Web App Attack"))
+                .ToList();
+
             var viewModel = new DashboardViewModel
             {
                 TotalDetectionLogs = allDetections.Count,
@@ -59,6 +79,11 @@ namespace RouterDetector.Controllers
                 MalwareDetections = malwareDetections,
                 PhishingDetections = phishingDetections,
                 SuspiciousEmailDetections = suspiciousEmailDetections,
+                BruteForceDetections = bruteForceDetections,
+                DdosDetections = ddosDetections,
+                SystemAttackDetections = systemAttackDetections,
+                MobileAppAttackDetections = mobileAppAttackDetections,
+                WebAppAttackDetections = webAppAttackDetections
             };
 
             return View(viewModel);

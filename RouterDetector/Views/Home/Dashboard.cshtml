@@ -57,6 +57,50 @@
         </div>
     </div>
 
+    <!-- New Threat Stats Cards -->
+    <div class="row">
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.BruteForceDetections.Count</h4>
+                    <p>Brute Force Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-danger text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.DdosDetections.Count</h4>
+                    <p>DDoS Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-dark text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.SystemAttackDetections.Count</h4>
+                    <p>System Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.MobileAppAttackDetections.Count</h4>
+                    <p>Mobile App Attacks</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <h4>@Model.WebAppAttackDetections.Count</h4>
+                    <p>Web App Attacks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Threat Details -->
     <div class="row">
         <!-- Malware Detections -->
@@ -84,66 +128,12 @@
             </div>
         </div>
 
-        <!-- Phishing & Email Detections -->
+        <!-- Brute Force, DDoS, System, Mobile, Web App Detections -->
         <div class="col-lg-6">
             <div class="card mb-4">
                 <div class="card-header">
-                    <i class="fas fa-envelope-open-text me-1"></i>
-                    Phishing and Suspicious Email Detections
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Other Threats Detected
                 </div>
                 <div class="card-body">
-                    @if (Model.PhishingDetections.Any() || Model.SuspiciousEmailDetections.Any())
-                    {
-                        <ul class="list-group">
-                            @foreach (var item in Model.PhishingDetections)
-                            {
-                                <li class="list-group-item"><strong>Phishing:</strong> @item.EventType <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
-                            }
-                            @foreach (var item in Model.SuspiciousEmailDetections)
-                            {
-                                <li class="list-group-item"><strong>Suspicious Email:</strong> @item.Notes <span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="text-center">No phishing or suspicious emails detected.</p>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Detections -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <i class="fas fa-history me-1"></i>
-            Recent Threat Activity
-        </div>
-        <div class="card-body">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Event Type</th>
-                        <th>Source IP</th>
-                        <th>Severity</th>
-                        <th>Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.RecentDetections)
-                    {
-                        <tr>
-                            <td>@item.Timestamp.ToString("g")</td>
-                            <td>@item.EventType</td>
-                            <td>@item.SourceIP</td>
-                            <td><span class="badge @GetSeverityBadgeClass(item.Severty)">@item.Severty</span></td>
-                            <td>@item.Notes</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <ul class="list-group

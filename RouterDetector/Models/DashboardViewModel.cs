@@ -18,5 +18,10 @@ namespace RouterDetector.Models
         public List<Detectionlogs> MalwareDetections { get; set; } = new();
         public List<Detectionlogs> PhishingDetections { get; set; } = new();
         public List<Detectionlogs> SuspiciousEmailDetections { get; set; } = new();
+        public List<Detectionlogs> BruteForceDetections { get; set; } = new();
+        public List<Detectionlogs> DdosDetections { get; set; } = new();
+        public List<Detectionlogs> SystemAttackDetections { get; set; } = new();
+        public List<Detectionlogs> MobileAppAttackDetections { get; set; } = new();
+        public List<Detectionlogs> WebAppAttackDetections { get; set; } = new();
     }
 } 
