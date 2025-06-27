@@ -1,4 +1,4 @@
-using RouterDetector.CaptureConsole.Interfaces;
+﻿using RouterDetector.CaptureConsole.Interfaces;
 using RouterDetector.CaptureConsole.Models;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -7,49 +7,90 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
 {
     public class PhishingDetector : IDetector
     {
-        public string ProtocolName => "Phishing Attempt";
+        public string ProtocolName => "HTTP Phishing Detector";
 
         // Regex to find URLs in payload. This is a simplified regex.
         private static readonly Regex UrlRegex = new Regex(@"(http|https|ftp)://([^\s/$.?#].[^\s]*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public DetectionResult? Analyze(NetworkPacket packet)
         {
-            // Phishing detection typically applies to web traffic.
-            if (packet.TransportProtocol != TransportProtocol.Tcp || (packet.DestinationPort != 80 && packet.DestinationPort != 443))
+            // Only scan TCP traffic going to port 80 (HTTP)
+            if (packet.TransportProtocol != TransportProtocol.Tcp || packet.DestinationPort != 80)
+                return null;
+
+            var raw = packet.RawPayloadString;
+            if (string.IsNullOrWhiteSpace(raw))
+                return null;
+
+            if (HttpPayloadParser.TryParse(raw, out var method, out var headers, out var body))
             {
+                if (method == "POST" &&
+                    headers.TryGetValue("Content-Type", out var ct) &&
+                    ct.Contains("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (ContainsCredentialHints(body))
+                    {
+
+                        return new DetectionResult(
+                            isThreat: true,
+                            packet: packet,
+                            description: "Plaintext credentials detected over HTTP",
+                            severity: ThreatSeverity.Medium
+                            );
+
+                    }
+                }
+            }
+
                 return null;
             }
 
-            if (packet.Payload == null || packet.Payload.Length == 0)
+        private static bool ContainsCredentialHints(string body)
             {
-                return null;
+            string[] keys = { "username", "password", "email", "login", "pass" };
+            return keys.Any(k => body.Contains(k, StringComparison.OrdinalIgnoreCase));
+        }
+
             }
 
-            string payloadString;
+    public static class HttpPayloadParser
+    {
+        public static bool TryParse(string raw, out string method, out Dictionary<string, string> headers, out string body)
+        {
+            method = string.Empty;
+            headers = new Dictionary<string, string>();
+            body = string.Empty;
+
             try
             {
-                payloadString = Encoding.UTF8.GetString(packet.Payload.Where(b => b.HasValue).Select(b => b.Value).ToArray());
-            }
-            catch (ArgumentException)
+                var sections = raw.Split(new[] { "\r\n\r\n" }, 2, StringSplitOptions.None);
+                if (sections.Length < 1) return false;
+
+                var headerLines = sections[0].Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                if (headerLines.Length == 0) return false;
+
+                // Parse request line
+                var requestParts = headerLines[0].Split(' ');
+                if (requestParts.Length < 2) return false;
+                method = requestParts[0].Trim().ToUpperInvariant();
+
+                // Parse headers
+                foreach (var line in headerLines.Skip(1))
             {
-                return null; // Not a valid string, ignore.
+                    var kv = line.Split(new[] { ':' }, 2);
+                    if (kv.Length == 2)
+                        headers[kv[0].Trim()] = kv[1].Trim();
             }
 
-            var matches = UrlRegex.Matches(payloadString);
-            foreach (Match match in matches)
+                // Extract body
+                if (sections.Length > 1)
+                    body = sections[1].Trim();
+
+                return true;
+            }
+            catch
             {
-                var url = match.Value;
-                // Example phishing check: URL contains an IP address instead of a domain name.
-                // e.g., http://123.123.123.123/login.html
-                if (Regex.IsMatch(url, @"https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"))
-                {
-                    return new DetectionResult(
-                        isThreat: true,
-                        packet: packet,
-                        description: $"Phishing detected: URL contains a suspicious IP address ({url})",
-                        severity: ThreatSeverity.High,
-                        protocolName: ProtocolName
-                    );
+                return false;
                 }
 
                 // Add more checks here, e.g., for known malicious domains, URL shorteners, etc.

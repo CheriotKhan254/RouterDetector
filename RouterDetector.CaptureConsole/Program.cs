@@ -1,11 +1,7 @@
 ﻿using RouterDetector.CaptureConsole.DetectionProtocols;
 using RouterDetector.CaptureConsole.Models;
 using RouterDetector.CaptureConsole.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.EntityFrameworkCore;
 using RouterDetector.Data;
-using System.Globalization;
 
 namespace RouterDetector.CaptureConsole
 {
@@ -15,37 +11,23 @@ namespace RouterDetector.CaptureConsole
 
         static void Main(string[] args)
         {
-            // Set up configuration
-            var configuration = new ConfigurationBuilder()
-                .SetBasePath(AppContext.BaseDirectory)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .Build();
-
-            // Set up dependency injection
-            var serviceProvider = new ServiceCollection()
-                .AddDbContext<RouterDetectorContext>(options =>
-                    options.UseSqlServer(configuration.GetConnectionString("Default-Connection")))
-                .BuildServiceProvider();
-
-
             CapturePacketsService captureService = new();
             DetectionEngine engine = new();
+            DatabaseService database = new();
 
             // Subscribe to packet events
-            captureService.OnPacketCaptured += (packet) =>
+            captureService.OnPacketCaptured += async (packet) =>
             {
                 try
                 {
-                    Console.WriteLine($"[{packet.Timestamp:HH:mm:ss}] {packet.SourceIp} → {packet.DestinationIp}");
 
+
+                    // Perform analysis
                     var threat = engine.AnalyzePacket(packet);
                     if (threat != null)
                     {
-                        using (var scope = serviceProvider.CreateScope())
-                        {
-                            var dbContext = scope.ServiceProvider.GetRequiredService<RouterDetectorContext>();
-                            LogThreat(threat, dbContext, captureService.SelectedDeviceDescription);
-                        }
+                        LogThreat(threat);
+                        await database.LogDetection(threat);
                     }
                 }
                 catch (Exception ex)
@@ -57,7 +39,6 @@ namespace RouterDetector.CaptureConsole
             try
             {
                 captureService.StartService();
-
                 Console.WriteLine("Press Enter to exit");
                 Console.ReadKey();
             }
