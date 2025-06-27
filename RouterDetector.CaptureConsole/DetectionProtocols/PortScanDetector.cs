@@ -4,17 +4,11 @@ using System.Net;
 
 namespace RouterDetector.CaptureConsole.DetectionProtocols
 {
-    public class PortScanDetector : IDetector
+    public class PortScanDetector(int portThreshold = 5, int timeWindowSeconds = 60) : IDetector
     {
         public string ProtocolName => "Port Scan";
-        private readonly int _portThreshold;
-        private readonly int _timeWindowSeconds;
-
-        public PortScanDetector(int portThreshold = 5, int timeWindowSeconds = 60)
-        {
-            _portThreshold = portThreshold;
-            _timeWindowSeconds = timeWindowSeconds;
-        }
+        private readonly int _portThreshold = portThreshold;
+        private readonly int _timeWindowSeconds = timeWindowSeconds;
 
 
         // Track recent port access per IP
@@ -84,33 +78,6 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
         }
 
 
-        public NetworkPacket CreateTestPacket()
-        {
-            var random = new Random();
 
-            return new NetworkPacket
-            {
-                // Packet metadata
-                Timestamp = DateTime.UtcNow,
-
-                // Network layer
-                SourceIp = new IPAddress(new byte[] { 192, 168, (byte)random.Next(1, 254), (byte)random.Next(1, 254) }),
-                DestinationIp = IPAddress.Parse("192.168.1.100"),
-                Protocol = IPProtocolType.TCP,
-                Ttl = 64, // Typical TTL value
-
-                // Transport layer
-                TransportProtocol = TransportProtocol.Tcp,
-                SourcePort = (ushort)random.Next(49152, 65535), // Ephemeral port range
-                DestinationPort = (ushort)random.Next(1, 1024), // Common port range for scanning
-
-                // Application layer
-                Payload = Array.Empty<byte?>(),
-
-                // Additional information
-                IsOutbound = true,
-                IsGatewayBound = false
-            };
-        }
     }
 }

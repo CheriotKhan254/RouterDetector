@@ -1,6 +1,7 @@
 ﻿using RouterDetector.CaptureConsole.DetectionProtocols;
 using RouterDetector.CaptureConsole.Models;
 using RouterDetector.CaptureConsole.Services;
+using RouterDetector.Data;
 
 namespace RouterDetector.CaptureConsole
 {
@@ -8,46 +9,34 @@ namespace RouterDetector.CaptureConsole
     {
         static void Main(string[] args)
         {
-
             CapturePacketsService captureService = new();
             DetectionEngine engine = new();
-
-
-
+            DatabaseService database = new();
 
             // Subscribe to packet events
-            captureService.OnPacketCaptured += (packet) =>
+            captureService.OnPacketCaptured += async (packet) =>
             {
                 try
                 {
-                    // Log and analyze
-                    Console.WriteLine($"[{packet.Timestamp:HH:mm:ss}] {packet.SourceIp} → {packet.DestinationIp}");
-                    // Perform analysis
-                    engine.AnalyzePacket(packet);
 
-                    // OR Using Option 2 (first threat only)
+
+                    // Perform analysis
                     var threat = engine.AnalyzePacket(packet);
                     if (threat != null)
                     {
                         LogThreat(threat);
-
+                        await database.LogDetection(threat);
                     }
-
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Packet analysis failed: {ex.Message}");
                 }
-
             };
 
             try
             {
-
                 captureService.StartService();
-            }
-
-
                 Console.WriteLine("Press Enter to exit");
                 Console.ReadKey();
             }
