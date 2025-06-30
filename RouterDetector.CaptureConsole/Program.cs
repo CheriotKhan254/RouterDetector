@@ -15,7 +15,7 @@ namespace RouterDetector.CaptureConsole
         {
             CapturePacketsService captureService = new();
             DetectionEngine engine = new();
-            DatabaseService database = new();
+            var database = DatabaseService.CreateForConsole();
 
             // Subscribe to packet events
             captureService.OnPacketCaptured += async (packet) =>

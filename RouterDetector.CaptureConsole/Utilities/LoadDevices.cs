@@ -53,18 +53,18 @@ namespace RouterDetector.CaptureConsole.Utilities
             {
                 int offset = 0;
                 var result = new WLAN_INTERFACE_INFO_LIST();
-                
+
                 // Read dwNumberOfItems
                 result.dwNumberOfItems = (uint)Marshal.ReadInt32(ppInterfaceList, offset);
                 offset += 4;
-                
+
                 // Read dwIndex
                 result.dwIndex = (uint)Marshal.ReadInt32(ppInterfaceList, offset);
                 offset += 4;
 
                 // Create array of proper size
                 result.InterfaceInfo = new WLAN_INTERFACE_INFO[result.dwNumberOfItems];
-                
+
                 // Read each interface info
                 for (int i = 0; i < result.dwNumberOfItems; i++)
                 {
@@ -206,7 +206,7 @@ namespace RouterDetector.CaptureConsole.Utilities
 
             IntPtr clientHandle = IntPtr.Zero;
             IntPtr interfaceList = IntPtr.Zero;
-            
+
             try
             {
                 uint negotiatedVersion;
@@ -258,7 +258,7 @@ namespace RouterDetector.CaptureConsole.Utilities
                                         attributes.wlanAssociationAttributes.dot11Ssid.ucSSID,
                                         ssidBytes,
                                         ssidLength);
-                                    
+
                                     return System.Text.Encoding.ASCII.GetString(ssidBytes);
                                 }
                             }
@@ -268,6 +268,7 @@ namespace RouterDetector.CaptureConsole.Utilities
                             }
                         }
                     }
+
                 }
             }
             catch (Exception ex)
@@ -335,6 +336,69 @@ namespace RouterDetector.CaptureConsole.Utilities
             }
         }
 
+        public static Guid? GetConnectedWifiInterfaceGuid()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return null;
+            }
+
+            IntPtr clientHandle = IntPtr.Zero;
+            IntPtr interfaceList = IntPtr.Zero;
+
+            try
+            {
+                uint negotiatedVersion;
+                uint result = WlanOpenHandle(WLAN_CLIENT_VERSION_WINDOWS_7, IntPtr.Zero, out negotiatedVersion, out clientHandle);
+                if (result != 0)
+                {
+                    Console.WriteLine($"WlanOpenHandle failed with error: {new Win32Exception((int)result).Message}");
+                    return null;
+                }
+
+                result = WlanEnumInterfaces(clientHandle, IntPtr.Zero, out interfaceList);
+                if (result != 0)
+                {
+                    Console.WriteLine($"WlanEnumInterfaces failed with error: {new Win32Exception((int)result).Message}");
+                    return null;
+                }
+
+                if (interfaceList == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                var interfaceInfoList = WLAN_INTERFACE_INFO_LIST.FromPointer(interfaceList);
+
+                for (int i = 0; i < interfaceInfoList.InterfaceInfo.Length; i++)
+                {
+                    var interfaceInfo = interfaceInfoList.InterfaceInfo[i];
+                    if (interfaceInfo.isState == WLAN_INTERFACE_STATE.wlan_interface_state_connected)
+                    {
+                        return interfaceInfo.InterfaceGuid;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting WiFi interface GUID: {ex.Message}");
+                return null;
+            }
+            finally
+            {
+                if (interfaceList != IntPtr.Zero)
+                {
+                    WlanFreeMemory(interfaceList);
+                }
+                if (clientHandle != IntPtr.Zero)
+                {
+                    WlanCloseHandle(clientHandle, IntPtr.Zero);
+                }
+            }
+
+            return null;
+        }
+
         public static ICaptureDevice? SelectDevice()
         {
             var devices = CaptureDeviceList.Instance;
@@ -344,6 +408,31 @@ namespace RouterDetector.CaptureConsole.Utilities
                 Console.WriteLine("No devices found. Make sure you're running as administrator.");
                 return null;
             }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var wifiGuid = GetConnectedWifiInterfaceGuid();
+                if (wifiGuid.HasValue)
+                {
+                    foreach (var device in devices)
+                    {
+                        const string npfPrefix = @"\Device\NPF_";
+                        if (device.Name.StartsWith(npfPrefix))
+                        {
+                            var deviceGuidString = device.Name.Substring(npfPrefix.Length);
+                            if (Guid.TryParse(deviceGuidString, out Guid deviceGuid))
+                            {
+                                if (deviceGuid == wifiGuid.Value)
+                                {
+                                    Console.WriteLine($"Automatically selected Wi-Fi device: {device.Description}");
+                                    return device;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Console.WriteLine();
             GetDefaultGateway();
             Console.WriteLine("\nAvailable network devices:");

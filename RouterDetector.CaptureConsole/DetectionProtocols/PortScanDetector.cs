@@ -39,9 +39,9 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             //record this access
             _accessHistory[sourceIp].Add((destPort, DateTime.UtcNow));
 
-            //remove entries older than 1 minute
+            //remove entries older than the time window
             _accessHistory[sourceIp].RemoveAll(x =>
-               (DateTime.UtcNow - x.Time).TotalSeconds > 60);
+               (DateTime.UtcNow - x.Time).TotalSeconds > _timeWindowSeconds);
 
             //check scan thresholds
             var uniquePorts = _accessHistory[sourceIp]
@@ -49,8 +49,9 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                 .Distinct()
                 .Count();
 
-            if (uniquePorts >= 5)//Configure this later
+            if (uniquePorts >= _portThreshold)
             {
+                CleanupStaleEntries();
                 return new DetectionResult(
                     isThreat: true,
                     packet: packet,
@@ -60,7 +61,6 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                 );
             }
 
-            CleanupStaleEntries();
             return null;
         }
 
@@ -68,7 +68,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
         {
             var now = DateTime.UtcNow;
             var staleIps = _accessHistory
-                .Where(kvp => kvp.Value.All(x => (now - x.Time).TotalSeconds > 60))
+                .Where(kvp => kvp.Value.All(x => (now - x.Time).TotalSeconds > _timeWindowSeconds))
                 .Select(kvp => kvp.Key)
                 .ToList();
 

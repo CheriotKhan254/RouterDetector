@@ -1,0 +1,3 @@
+http://test-phishing-site.com/login
+https://another-malicious-domain.net/secure-area
+http://www.bad-actor-website.org/index.html 
