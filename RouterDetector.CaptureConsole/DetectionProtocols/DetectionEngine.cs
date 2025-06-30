@@ -10,7 +10,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
         public DetectionEngine()
         {
             _detectors.Add(new PortScanDetector());
-            _detectors.Add(new TestProtocol());
+           // _detectors.Add(new TestProtocol());
             _detectors.Add(new SignatureBasedDetector());
             _detectors.Add(new PhishingDetector());
             _detectors.Add(new SuspiciousEmailDetector());
