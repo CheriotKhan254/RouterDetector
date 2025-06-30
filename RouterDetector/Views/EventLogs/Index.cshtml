@@ -17,6 +17,12 @@
 
 <h1>Event Logs</h1>
 
+<!-- Export Buttons -->
+<div class="mb-3">
+    <a class="btn btn-success me-2" href="@Url.Action("ExportToExcel", new { filterIpAddress = Model.FilterIpAddress, filterProtocol = Model.FilterProtocol, filterStartDate = Model.FilterStartDate, filterEndDate = Model.FilterEndDate })">Export to Excel</a>
+    <a class="btn btn-danger" href="@Url.Action("ExportToPdf", new { filterIpAddress = Model.FilterIpAddress, filterProtocol = Model.FilterProtocol, filterStartDate = Model.FilterStartDate, filterEndDate = Model.FilterEndDate })">Export to PDF</a>
+</div>
+
 <!-- Filter Form -->
 <form method="get" class="mb-4">
     <div class="row g-2">
@@ -185,4 +191,43 @@
     Showing @((Model.PageNumber - 1) * Model.PageSize + 1) to 
     @Math.Min(Model.PageNumber * Model.PageSize, Model.TotalRecords) of 
     @Model.TotalRecords records
-</div> 
+</div>
+
+<script>
+    // Get the timestamp of the latest log in the table
+    function getLastLogTime() {
+        const rows = document.querySelectorAll('tbody tr');
+        if (rows.length < 1) return null;
+        // Find the first row with a valid timestamp (skip 'No records found')
+        for (let i = 0; i < rows.length; i++) {
+            const cell = rows[i].querySelector('td:nth-child(2)');
+            if (cell && cell.textContent.trim()) {
+                // Try to parse the timestamp (format: g)
+                return cell.textContent.trim();
+            }
+        }
+        return null;
+    }
+
+    function toIsoDate(dateStr) {
+        // Try to parse the date string to ISO format
+        const d = new Date(dateStr);
+        return isNaN(d) ? null : d.toISOString();
+    }
+
+    function checkForNewLogs() {
+        const lastLogTimeStr = getLastLogTime();
+        if (!lastLogTimeStr) return;
+        const lastLogTimeIso = toIsoDate(lastLogTimeStr);
+        if (!lastLogTimeIso) return;
+        fetch(`/EventLogs/CheckNewLogs?lastLogTime=${encodeURIComponent(lastLogTimeIso)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.hasNewLogs) {
+                    location.reload();
+                }
+            });
+    }
+
+    setInterval(checkForNewLogs, 10000); // Check every 10 seconds
+</script> 
