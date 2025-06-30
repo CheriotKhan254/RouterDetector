@@ -48,11 +48,10 @@ namespace RouterDetector.CaptureConsole.Services
             try
             {
                 var networkPacket = PacketParser.Parse(receivedPacket.GetPacket());
-                OnPacketCaptured?.Invoke(networkPacket);
-
-
-
-
+                if (networkPacket != null)
+                {
+                    OnPacketCaptured?.Invoke(networkPacket);
+                }
             }
             catch (Exception ex)
             {
