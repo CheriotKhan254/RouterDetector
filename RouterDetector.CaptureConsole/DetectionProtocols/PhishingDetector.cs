@@ -1,5 +1,7 @@
 ﻿using RouterDetector.CaptureConsole.Interfaces;
 using RouterDetector.CaptureConsole.Models;
+using RouterDetector.CaptureConsole.ProtocolParsers;
+using RouterDetector.CaptureConsole.Services;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -8,6 +10,12 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
     public class PhishingDetector : IDetector
     {
         public string ProtocolName => "HTTP Phishing Detector";
+        private readonly ThreatIntelService _threatIntelService;
+
+        public PhishingDetector(ThreatIntelService threatIntelService)
+        {
+            _threatIntelService = threatIntelService;
+        }
 
         // Regex to find URLs in payload. This is a simplified regex.
         private static readonly Regex UrlRegex = new Regex(@"(http|https|ftp)://([^\s/$.?#].[^\s]*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -18,12 +26,25 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             if (packet.TransportProtocol != TransportProtocol.Tcp || packet.DestinationPort != 80)
                 return null;
 
-            var raw = packet.GetPayloadAsString(Encoding.UTF8); // Fix: Use GetPayloadAsString method to retrieve payload as string
+            var raw = packet.GetPayloadAsString(Encoding.UTF8);
             if (string.IsNullOrWhiteSpace(raw))
                 return null;
 
             if (HttpPayloadParser.TryParse(raw, out var method, out var headers, out var body))
             {
+                // Check 1: Is the Host header on our blacklist?
+                if (headers.TryGetValue("Host", out var host) && _threatIntelService.IsDomainBlacklisted(host))
+                {
+                    return new DetectionResult(
+                        isThreat: true,
+                        packet: packet,
+                        description: $"HTTP request to known malicious host: {host}",
+                        severity: ThreatSeverity.Critical,
+                        protocolName: ProtocolName
+                    );
+                }
+
+                // Check 2: Are plaintext credentials being sent?
                 if (method == "POST" &&
                     headers.TryGetValue("Content-Type", out var ct) &&
                     ct.Contains("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
@@ -35,7 +56,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                             packet: packet,
                             description: "Plaintext credentials detected over HTTP",
                             severity: ThreatSeverity.Medium,
-                            protocolName: ProtocolName // Fix: Added the required 'protocolName' argument
+                            protocolName: ProtocolName
                         );
                     }
                 }
@@ -50,46 +71,4 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             return keys.Any(k => body.Contains(k, StringComparison.OrdinalIgnoreCase));
         }
     }
-
-    public static class HttpPayloadParser
-    {
-        public static bool TryParse(string raw, out string method, out Dictionary<string, string> headers, out string body)
-        {
-            method = string.Empty;
-            headers = new Dictionary<string, string>();
-            body = string.Empty;
-
-            try
-            {
-                var sections = raw.Split(new[] { "\r\n\r\n" }, 2, StringSplitOptions.None);
-                if (sections.Length < 1) return false;
-
-                var headerLines = sections[0].Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
-                if (headerLines.Length == 0) return false;
-
-                // Parse request line
-                var requestParts = headerLines[0].Split(' ');
-                if (requestParts.Length < 2) return false;
-                method = requestParts[0].Trim().ToUpperInvariant();
-
-                // Parse headers
-                foreach (var line in headerLines.Skip(1))
-                {
-                    var kv = line.Split(new[] { ':' }, 2);
-                    if (kv.Length == 2)
-                        headers[kv[0].Trim()] = kv[1].Trim();
-                }
-
-                // Extract body
-                if (sections.Length > 1)
-                    body = sections[1].Trim();
-
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-    }
-    }
+}
