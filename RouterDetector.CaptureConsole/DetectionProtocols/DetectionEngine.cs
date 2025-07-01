@@ -18,19 +18,21 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             _detectors.Add(new DdosDetector());
             _detectors.Add(new BruteForceDetector());
             _detectors.Add(new PhishingDetector(_threatIntelService));
+            _detectors.Add(new PortScanDetector());
         }
 
-        public DetectionResult? AnalyzePacket(NetworkPacket packet)
+        public List<DetectionResult> AnalyzePacket(NetworkPacket packet)
         {
+            var results = new List<DetectionResult>();
             foreach (var detector in _detectors)
             {
                 var result = detector.Analyze(packet);
                 if (result is { IsThreat: true })
                 {
-                    return result;
+                    results.Add(result);
                 }
             }
-            return null;
+            return results;
         }
 
         public void AddDetector(IDetector detector)
