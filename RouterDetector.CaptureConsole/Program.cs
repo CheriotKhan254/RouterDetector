@@ -95,7 +95,6 @@ namespace RouterDetector.CaptureConsole
                                ThreatSeverity.Critical => ConsoleColor.Magenta,
                                _ => ConsoleColor.Gray
                            };
-                           PrintPacketInfo(packet, color, t);
                            await LogThreatAsync(t, captureService.SelectedDeviceDescription, database);
                        }
                    }
@@ -166,9 +165,10 @@ namespace RouterDetector.CaptureConsole
 
             Console.ForegroundColor = color;
             Console.WriteLine(threat.GetSummary());
-            Console.ResetColor();
 
             Console.WriteLine($"Source: {threat.OriginalPacket.SourceIp} -> Destination: {threat.OriginalPacket.DestinationIp}:{threat.OriginalPacket.DestinationPort}");
+            Console.ResetColor();
+
             Console.WriteLine();
 
             // Try to resolve hostname for source IP
