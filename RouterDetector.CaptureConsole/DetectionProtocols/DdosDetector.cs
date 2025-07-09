@@ -24,7 +24,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
             _targetHits[packet.DestinationIp].RemoveAll(t => (now - t).TotalSeconds > _windowSeconds);
             if (_targetHits[packet.DestinationIp].Count >= _threshold)
             {
-                return new DetectionResult(true, packet, $"Possible DDoS attack on {packet.DestinationIp}", ThreatSeverity.Critical, ProtocolName);
+                return new DetectionResult(true, packet, $"Possible DDoS attack detected on {packet.DestinationIp} [DDoS]", ThreatSeverity.Critical, ProtocolName);
             }
             return null;
         }

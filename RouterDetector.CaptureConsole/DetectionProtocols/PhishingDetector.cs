@@ -38,7 +38,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                     return new DetectionResult(
                         isThreat: true,
                         packet: packet,
-                        description: $"HTTP request to known malicious host: {host}",
+                        description: $"Phishing attempt: HTTP request to known malicious host: {host} [Phishing]",
                         severity: ThreatSeverity.Critical,
                         protocolName: ProtocolName
                     );
@@ -54,7 +54,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                         return new DetectionResult(
                             isThreat: true,
                             packet: packet,
-                            description: "Plaintext credentials detected over HTTP",
+                            description: "Suspicious email: Plaintext credentials detected over HTTP [Suspicious Email]",
                             severity: ThreatSeverity.Medium,
                             protocolName: ProtocolName
                         );

@@ -46,7 +46,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                 return new DetectionResult(
                     isThreat: true,
                     packet: packet,
-                    description: $"Anomalous HTTPS connection volume detected from {sourceIp} ({_connections[sourceIp].Count} connections in {_windowSeconds}s)",
+                    description: $"Suspicious HTTPS connection volume detected from {sourceIp} ({_connections[sourceIp].Count} connections in {_windowSeconds}s) [Suspicious Activity]",
                     severity: ThreatSeverity.Medium,
                     protocolName: ProtocolName
                 );

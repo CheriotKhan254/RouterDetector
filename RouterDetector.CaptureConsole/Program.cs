@@ -14,6 +14,11 @@ namespace RouterDetector.CaptureConsole
 
         static void Main(string[] args)
         {
+            Console.Write("Enter your SACCO/organization name: ");
+            string institution = Console.ReadLine()?.Trim() ?? "Unknown";
+            Console.Write("Enter your staff position: ");
+            string staffPosition = Console.ReadLine()?.Trim() ?? "Unknown";
+
             Console.WriteLine("Initializing RouterDetector...");
 
             // 1. Initialize detection engine (handles ThreatIntelService internally)
@@ -96,7 +101,7 @@ namespace RouterDetector.CaptureConsole
                                _ => ConsoleColor.Gray
                            };
                            PrintPacketInfo(packet, color, t);
-                           await LogThreatAsync(t, captureService.SelectedDeviceDescription, database);
+                           await LogThreatAsync(t, captureService.SelectedDeviceDescription, database, institution, staffPosition);
                        }
                    }
                    else
@@ -152,7 +157,7 @@ namespace RouterDetector.CaptureConsole
             Console.ResetColor();
         }
 
-        private static async Task LogThreatAsync(DetectionResult threat, string? deviceDescription, DatabaseService database)
+        private static async Task LogThreatAsync(DetectionResult threat, string? deviceDescription, DatabaseService database, string institution, string staffPosition)
         {
             var eatTime = TimeZoneInfo.ConvertTimeFromUtc(threat.DetectionTime.ToUniversalTime(), EatZone);
             var color = threat.Severity switch
@@ -178,14 +183,17 @@ namespace RouterDetector.CaptureConsole
             string? dstHostname = null;
             try { dstHostname = System.Net.Dns.GetHostEntry(threat.OriginalPacket.DestinationIp?.ToString() ?? "").HostName; } catch { }
 
+            // Get router/WiFi name for DeviceName
+            string routerName = LoadDevices.GetWifiRouterName() ?? "Unknown Router";
+
             // Save threat and packet details to EventLog
             var eventLog = new RouterDetector.Models.EventLog
             {
                 Timestamp = eatTime,
-                Institution = LoadDevices.GetWifiRouterName() ?? "Unknown Network",
-                DeviceName = deviceDescription,
-                DeviceType = deviceDescription,
-                LogSource = threat.ProtocolName,
+                Institution = institution,
+                DeviceName = routerName,
+                DeviceType = "ROUTER",
+                LogSource = $"{threat.ProtocolName} (User: {Environment.UserName}, Position: {staffPosition})",
                 EventType = threat.ThreatDescription,
                 Severity = threat.Severity.ToString(),
                 Username = Environment.UserName, // Set if available
@@ -209,7 +217,6 @@ namespace RouterDetector.CaptureConsole
                 ActionTaken2 = "Logged"
             };
             await database.LogEvent(eventLog);
-
         }
     }
 }

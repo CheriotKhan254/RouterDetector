@@ -55,7 +55,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
                 return new DetectionResult(
                     isThreat: true,
                     packet: packet,
-                    description: $"Port scan detected from {sourceIp} ({uniquePorts} unique ports)",
+                    description: $"Suspicious port scanning activity detected from {sourceIp} ({uniquePorts} unique ports) [Suspicious Attack]",
                     severity: ThreatSeverity.High,
                     protocolName: ProtocolName
                 );
