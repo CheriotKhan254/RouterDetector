@@ -7,17 +7,13 @@ using System.Text.RegularExpressions;
 
 namespace RouterDetector.CaptureConsole.DetectionProtocols
 {
-    public class PhishingDetector : IDetector
+    public class PhishingDetector(ThreatIntelService threatIntelService) : IDetector
     {
         public string ProtocolName => "HTTP Phishing Detector";
-        private readonly ThreatIntelService _threatIntelService;
-
-        public PhishingDetector(ThreatIntelService threatIntelService)
-        {
-            _threatIntelService = threatIntelService;
-        }
+        private readonly ThreatIntelService _threatIntelService = threatIntelService;
 
         // Regex to find URLs in payload. This is a simplified regex.
+
         private static readonly Regex UrlRegex = new Regex(@"(http|https|ftp)://([^\s/$.?#].[^\s]*)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         public DetectionResult? Analyze(NetworkPacket packet)
@@ -67,7 +63,7 @@ namespace RouterDetector.CaptureConsole.DetectionProtocols
 
         private static bool ContainsCredentialHints(string body)
         {
-            string[] keys = { "username", "password", "email", "login", "pass" };
+            string[] keys = ["username", "password", "email", "login", "pass"];
             return keys.Any(k => body.Contains(k, StringComparison.OrdinalIgnoreCase));
         }
     }
