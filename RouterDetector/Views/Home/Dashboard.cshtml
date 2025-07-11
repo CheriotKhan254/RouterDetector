@@ -1,6 +1,6 @@
 @model RouterDetector.Models.DashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Security Analytics Dashboard";
     string GetSeverityBadgeClass(string severity)
     {
         return severity?.ToLower() switch
@@ -14,39 +14,407 @@
     }
 }
 
-<div class="container-fluid">
-    <h1 class="mt-4 mb-3">Security Dashboard</h1>
-    <p class="mb-4">Real-time threat monitoring and network analysis.</p>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Chart.js configurations and data
+        const chartColors = {
+            primary: '#007bff',
+            success: '#28a745',
+            danger: '#dc3545',
+            warning: '#ffc107',
+            info: '#17a2b8',
+            dark: '#343a40',
+            secondary: '#6c757d'
+        };
 
-    <!-- Stats Cards -->
+        // Attack Type Chart
+        const attackTypeData = {
+            labels: @Json.Serialize(Model.AttackTypeCounts.Keys),
+            datasets: [{
+                label: 'Attack Count',
+                data: @Json.Serialize(Model.AttackTypeCounts.Values),
+                backgroundColor: [
+                    chartColors.primary,
+                    chartColors.danger,
+                    chartColors.warning,
+                    chartColors.info,
+                    chartColors.success,
+                    chartColors.dark,
+                    chartColors.secondary
+                ],
+                borderWidth: 2
+            }]
+        };
+
+        // Monthly Trends Chart
+        const monthlyTrendsData = {
+            labels: @Json.Serialize(Model.MonthlyTrends.Select(m => m.Month)),
+            datasets: [{
+                label: 'Total Events',
+                data: @Json.Serialize(Model.MonthlyTrends.Select(m => m.TotalEvents)),
+                borderColor: chartColors.primary,
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Port Scan',
+                data: @Json.Serialize(Model.MonthlyTrends.Select(m => m.PortScanEvents)),
+                borderColor: chartColors.danger,
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Brute Force',
+                data: @Json.Serialize(Model.MonthlyTrends.Select(m => m.BruteForceEvents)),
+                borderColor: chartColors.warning,
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4
+            }]
+        };
+
+        // Severity Distribution Chart
+        const severityData = {
+            labels: @Json.Serialize(Model.EventsBySeverity.Keys),
+            datasets: [{
+                label: 'Events by Severity',
+                data: @Json.Serialize(Model.EventsBySeverity.Values),
+                backgroundColor: [
+                    chartColors.danger,
+                    chartColors.warning,
+                    chartColors.success,
+                    chartColors.dark
+                ],
+                borderWidth: 2
+            }]
+        };
+
+        // Rule Type Distribution Chart
+        const ruleTypeData = {
+            labels: @Json.Serialize(Model.EventsByRuleType.Keys),
+            datasets: [{
+                label: 'Events by Rule Type',
+                data: @Json.Serialize(Model.EventsByRuleType.Values),
+                backgroundColor: [
+                    chartColors.primary,
+                    chartColors.info,
+                    chartColors.warning
+                ],
+                borderWidth: 2
+            }]
+        };
+
+        // Hourly Activity Chart
+        const hourlyData = {
+            labels: @Json.Serialize(Model.EventsByHour.Keys),
+            datasets: [{
+                label: 'Events by Hour',
+                data: @Json.Serialize(Model.EventsByHour.Values),
+                borderColor: chartColors.info,
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        // Initialize charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attack Type Chart
+            new Chart(document.getElementById('attackTypeChart'), {
+                type: 'doughnut',
+                data: attackTypeData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Attack Type Distribution'
+                        }
+                    }
+                }
+            });
+
+            // Monthly Trends Chart
+            new Chart(document.getElementById('monthlyTrendsChart'), {
+                type: 'line',
+                data: monthlyTrendsData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Monthly Attack Trends'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Severity Distribution Chart
+            new Chart(document.getElementById('severityChart'), {
+                type: 'pie',
+                data: severityData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Events by Severity'
+                        }
+                    }
+                }
+            });
+
+            // Rule Type Chart
+            new Chart(document.getElementById('ruleTypeChart'), {
+                type: 'bar',
+                data: ruleTypeData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Events by Rule Type'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Hourly Activity Chart
+            new Chart(document.getElementById('hourlyChart'), {
+                type: 'line',
+                data: hourlyData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Hourly Activity Pattern'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+
+        // Filter form submission
+        function applyFilters() {
+            const form = document.getElementById('filterForm');
+            const formData = new FormData(form);
+            const params = new URLSearchParams();
+            
+            for (let [key, value] of formData.entries()) {
+                if (value) params.append(key, value);
+            }
+            
+            window.location.href = '/Home/Dashboard?' + params.toString();
+        }
+
+        function clearFilters() {
+            window.location.href = '/Home/Dashboard';
+        }
+    </script>
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Security Analytics Dashboard</h1>
+            <p class="text-muted mb-0">Comprehensive threat monitoring and network analysis</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print me-1"></i>Export Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Analytics</h5>
+        </div>
+        <div class="card-body">
+            <form id="filterForm" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-control" name="startDate" value="@Model.StartDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-control" name="endDate" value="@Model.EndDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Event Type</label>
+                    <select class="form-select" name="eventType">
+                        <option value="">All Types</option>
+                        @foreach (var eventType in Model.EventsByType.Keys)
+                        {
+                            @if (Model.SelectedEventType == eventType)
+                            {
+                                <option value="@eventType" selected>@eventType</option>
+                            }
+                            else
+                            {
+                                <option value="@eventType">@eventType</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Severity</label>
+                    <select class="form-select" name="severity">
+                        <option value="">All Severities</option>
+                        @foreach (var severity in Model.EventsBySeverity.Keys)
+                        {
+                            @if (Model.SelectedSeverity == severity)
+                            {
+                                <option value="@severity" selected>@severity</option>
+                            }
+                            else
+                            {
+                                <option value="@severity">@severity</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Rule Type</label>
+                    <select class="form-select" name="ruleType">
+                        <option value="">All Rules</option>
+                        @foreach (var ruleType in Model.EventsByRuleType.Keys)
+                        {
+                            @if (Model.SelectedRuleType == ruleType)
+                            {
+                                <option value="@ruleType" selected>@ruleType</option>
+                            }
+                            else
+                            {
+                                <option value="@ruleType">@ruleType</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Action Taken</label>
+                    <select class="form-select" name="actionTaken">
+                        <option value="">All Actions</option>
+                        @foreach (var action in Model.EventsByActionTaken.Keys)
+                        {
+                            @if (Model.SelectedActionTaken == action)
+                            {
+                                <option value="@action" selected>@action</option>
+                            }
+                            else
+                            {
+                                <option value="@action">@action</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search me-1"></i>Apply Filters
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                        <i class="fas fa-times me-1"></i>Clear Filters
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Key Metrics Cards -->
     <div class="row g-3 mb-4">
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <div class="card bg-primary text-white h-100 shadow-sm">
                 <div class="card-body">
-                    <h4 class="mb-1">@Model.TotalEventLogs</h4>
-                    <p class="mb-0">Total Events Logged</p>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">@Model.TotalEventLogs</h4>
+                            <p class="mb-0">Total Events</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-shield-alt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <div class="card bg-danger text-white h-100 shadow-sm">
                 <div class="card-body">
-                    <h4 class="mb-1">@Model.MalwareEvents.Count</h4>
-                    <p class="mb-0">Malware/Virus Events</p>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">@Model.TotalThreats</h4>
+                            <p class="mb-0">High/Critical Threats</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-6">
+        <div class="col-xl-3 col-md-6">
             <div class="card bg-warning text-dark h-100 shadow-sm">
                 <div class="card-body">
-                    <h4 class="mb-1">@(Model.PhishingEvents.Count + Model.SuspiciousEmailEvents.Count)</h4>
-                    <p class="mb-0">Phishing & Suspicious Mails</p>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">@Model.TotalBlocked</h4>
+                            <p class="mb-0">Blocked Attacks</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-ban fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-1">@Model.TotalQuarantined</h4>
+                            <p class="mb-0">Quarantined</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-box fa-2x opacity-75"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- New Threat Stats Cards -->
+    <!-- Attack Type Cards Row -->
     <div class="row">
         <div class="col-xl-2 col-md-4">
             <div class="card bg-info text-white mb-4">
@@ -90,82 +458,100 @@
         </div>
     </div>
 
-    <!-- Threat Details -->
-    <div class="row g-3 mb-4">
-        <!-- Malware Events -->
+    <!-- Charts Row 1 -->
+    <div class="row g-4 mb-4">
         <div class="col-lg-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-danger text-white">
-                    <i class="fas fa-bug me-1"></i>
-                    Malware, Worms, and Trojans Detected
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Attack Type Distribution</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.MalwareEvents.Any())
-                    {
-                        <ul class="list-group list-group-flush">
-                            @foreach (var item in Model.MalwareEvents)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><strong>@item.EventType</strong> from <span class="text-primary">@item.SrcIp</span></span>
-                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="text-center text-muted">No malware detected.</p>
-                    }
+                    <canvas id="attackTypeChart" height="300"></canvas>
                 </div>
             </div>
         </div>
-
-        <!-- Brute Force, DDoS, System, Mobile, Web App Detections -->
-        <!-- Phishing & Email Events -->
         <div class="col-lg-6">
-            <div class="card mb-4">
+            <div class="card h-100">
                 <div class="card-header">
-                    <i class="fas fa-shield-alt me-1"></i>
-                    Other Threats Detected
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-warning text-dark">
-                    <i class="fas fa-envelope-open-text me-1"></i>
-                    Phishing and Suspicious Email Detections
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Events by Severity</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.PhishingEvents.Any() || Model.SuspiciousEmailEvents.Any())
-                    {
-                        <ul class="list-group list-group-flush">
-                            @foreach (var item in Model.PhishingEvents)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><strong>Phishing:</strong> @item.EventType</span>
-                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
-                                </li>
-                            }
-                            @foreach (var item in Model.SuspiciousEmailEvents)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span><strong>Suspicious Email:</strong> @item.Notes</span>
-                                    <span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="text-center text-muted">No phishing or suspicious emails detected.</p>
-                    }
+                    <canvas id="severityChart" height="300"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Recent Events -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-info text-white">
-            <i class="fas fa-history me-1"></i>
-            Recent Event Activity
+    <!-- Charts Row 2 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Monthly Attack Trends</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyTrendsChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Events by Rule Type</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ruleTypeChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 3 -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Hourly Activity Pattern</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hourlyChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Top Source IPs</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>IP Address</th>
+                                    <th>Event Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ip in Model.TopSourceIPs.Take(10))
+                                {
+                                    <tr>
+                                        <td><code>@ip.Key</code></td>
+                                        <td><span class="badge bg-primary">@ip.Value</span></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Security Events</h5>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -174,9 +560,11 @@
                         <tr>
                             <th>Timestamp</th>
                             <th>Event Type</th>
+                            <th>Rule Type</th>
                             <th>Source IP</th>
                             <th>Severity</th>
-                            <th>Details</th>
+                            <th>Action Taken</th>
+                            <th>Message</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -185,13 +573,18 @@
                             <tr>
                                 <td>@item.Timestamp.ToString("g")</td>
                                 <td><span class="badge bg-info">@item.EventType</span></td>
-                                <td>@item.SrcIp</td>
+                                <td><span class="badge bg-secondary">@item.RuleType</span></td>
+                                <td><code>@item.SrcIp</code></td>
                                 <td><span class="@GetSeverityBadgeClass(item.Severity)">@item.Severity</span></td>
-                                <td>@item.Notes</td>
+                                <td><span class="badge bg-warning text-dark">@item.ActionTaken</span></td>
+                                <td>@item.Message</td>
                             </tr>
                         }
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
     </div>

@@ -11,6 +11,9 @@
     <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-k5bIbRYnTtd23Aw7v1uTX1Vm+5syo9HRa1Lcz/ZWfbn0r8bQ2/FkpdpW1Bb6X7gUQ4mDGVAY9FZ/f+Nuk8UVtA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/RouterDetector.styles.css" asp-append-version="true" />
 </head>
@@ -20,9 +23,7 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-white shadow-sm border-bottom">
             <div class="container-fluid">
-                <a class="navbar-brand fw-bold text-primary" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fa-solid fa-shield-virus me-2"></i>RouterDetector
-                </a>
+                <!-- Removed brand text -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -34,24 +35,24 @@
                                 <i class="fa fa-home me-1"></i>Home
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Dashboard">
-                                    <i class="fa fa-chart-bar me-1"></i>Dashboard
-                                </a>
-                            </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Dashboard">
+                                <i class="fa fa-chart-bar me-1"></i>Dashboard
+                            </a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="EventLogs" asp-action="Index">
                                 <i class="fa-solid fa-network-wired me-1"></i>Event Logs
                             </a>
                         </li>
-                        </ul>
-                        <ul class="navbar-nav ms-auto">
+                    </ul>
+                    <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
-                                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-outline-danger ms-2">
-                                        <i class="fa fa-sign-out-alt"></i> Logout
-                                    </button>
-                                </form>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-outline-danger ms-2">
+                                    <i class="fa fa-sign-out-alt"></i> Logout
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>
